@@ -1,147 +1,254 @@
 # Titlo
 
 [![CI](https://github.com/ermin1990/Titlo/actions/workflows/ci.yml/badge.svg)](https://github.com/ermin1990/Titlo/actions/workflows/ci.yml)
+[![License: MPL-2.0](https://img.shields.io/badge/license-MPL--2.0-ffe14a.svg)](LICENSE)
+[![Platforms](https://img.shields.io/badge/platforms-web%20%C2%B7%20android%20%C2%B7%20ios-7cb8ff.svg)](#mobile)
 
-Animirani titlovi riječ po riječ i filteri za kratke videe. **Sve ostaje na uređaju** — bez
-servera, bez naloga, bez slanja videa.
+On-device animated word-by-word captions and filters for short videos.
 
-Titlo nije video editor. On je alat koji video snimljen bilo gdje pretvara u video sa titlovima koji
-se pojavljuju u ritmu govora.
+Paste your text, tap along with the video, fix a word if it is wrong, and export an MP4 with the
+captions burned in. Speech recognition is optional and runs locally. **No server, no account, no
+upload.**
 
-> Status: **radni prototip** (faza 1 i dobar dio faze 3 iz roadmapa). Radi uvoz videa, tapkanje,
-> automatski predlog vremena, uređivanje po riječi, stilovi, filteri, animacije i izvoz titlova.
-> Izvoz MP4 i prepoznavanje govora modelom dolaze uz native module.
+> Status: working prototype. The web app, the word-by-word editor, the plugin styles, speech
+> recognition and MP4 export are implemented. The Android and iOS shells build; real-device testing
+> and a release build are still ahead.
 
 ---
 
-## Šta radi sada
+## Table of contents
 
-- **Uvoz videa** iz fajla (MP4/H.264, MOV, WebM), 9:16, 1:1, 4:5, 16:9.
-- **Prepoznavanje govora na uređaju** (Whisper kroz Transformers.js): model napiše tekst i vremena
-  riječi. Tri veličine modela, izbor jezika (`bs`, `hr`, `sr`, `en`).
-  > Iskustvo s bosanskim: oznaka `hr` često daje bolji tekst od `bs`, jer hrvatski ima više
-  > podataka u modelu. Probaj oba na istom snimku.
-- **Lijepljenje teksta** s automatskom podjelom na redove i riječi (NFC, dijakritici, ćirilica,
-  emoji, jezici bez razmaka kroz `Intl.Segmenter`).
-- **Ispravka samo jedne riječi**: klikni riječ u traci, ispravi je i sačuvaj. Vrijeme ostaje, a ako
-  upišeš više riječi one podijele postojeće trajanje.
-- **Tapkanje**: video ide, ti tapneš kad čuješ riječ. 0,5× / 0,75× / 1×, poništavanje, preskok,
-  ponavljanje reda, vibracija. Tastatura: `Space`, `K`, `⌫`, `←`, `→`, `1` `2` `3`.
-- **Automatski predlog bez modela**: analiza glasnoće zvuka na uređaju pronađe govorne dijelove i
-  rasporedi riječi po slogovima. Brzo, radi za svaki jezik, i dovoljno dobro da popraviš samo
-  pogrešno.
-- **Tapkanje samo jednog reda** — automatski predlog pa popravka tamo gdje ne valja.
-- **Fino uređivanje**: klizači početka i kraja za svaku riječ (korak 10 ms), ivice se zaustavljaju
-  na susjednoj riječi, globalni pomak za Bluetooth slušalice.
-- **Pozicija titla**: prevuci titl mišem ili prstom po pregledu, ili podesi X/Y/širinu u kartici
-  Stil.
-- **6 stilova** titlova i **6 filtera**, oba kao mali JSON fajlovi.
-- **Animacije**: fade, pop, odozgo, odozdo, uvećaj, kucanje, blur, wiggle — biraju se po riječi i
-  po redu.
-- **Pregled jednak izvozu**: isti renderer crta i ekran i kadar koji se snima.
-- **Izvoz**: SRT, VTT, LRC, PNG kadar, `projekat.titlo.json`.
-- **Sigurne zone** za Instagram, TikTok i Shorts, vidljive u pregledu.
-- **Automatsko čuvanje** teksta, projekta i postavki lokalno. Projekt se nastavlja kad ponovo
-  uvezeš isti video.
+- [Why](#why)
+- [Features](#features)
+- [Quick start](#quick-start)
+- [Mobile](#mobile)
+- [How it works](#how-it-works)
+- [Editing](#editing)
+- [Project structure](#project-structure)
+- [Design rules](#design-rules)
+- [Testing](#testing)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [Privacy](#privacy)
+- [License](#license)
 
-### Šta još nije urađeno
+## Why
 
-- Izvoz MP4 (čeka `native-export` / WebCodecs).
-- Poravnanje zalijepljenog teksta sa zvukom (Whisper za sada piše i tekst i vremena).
-- Mobilna aplikacija (Expo) i desktop omot (Tauri).
-- Spajanje i razdvajanje redova u editoru.
-- Historija poništavanja u editoru (u tapkanju radi).
-- Galerija pluginova i dijeljenje izgleda linkom.
+Good animated-caption tools are paid, upload your video to a server, and handle smaller languages
+poorly. Automatic recognition fails on names, slang and singing, and fixing it on a phone is slow.
 
-## Pokretanje
+Titlo is built around three timing methods that complement each other:
+
+1. **Tap.** The text is already there; you tap when each word is spoken. Works for every language
+   and every kind of content.
+2. **Auto-time.** On-device audio analysis distributes words over the detected speech. A quick first
+   pass that you correct only where needed.
+3. **Speech recognition.** Whisper writes the text and word timings on the device. You fix the
+   mistakes.
+
+## Features
+
+### Captions
+
+- Word-by-word highlighting with six built-in styles and per-style animation presets.
+- Animations: fade, pop, slide from top/bottom, scale, typewriter, blur, wiggle.
+- Caption box: drag it directly on the preview, or set X, Y and width in the style panel.
+- Safe zones for Instagram, TikTok and YouTube Shorts.
+- Bilingual-ready text handling: NFC normalization, `č ć š ž đ`, Cyrillic, emoji, no-space
+  languages via `Intl.Segmenter`.
+- SRT, VTT and LRC import/export; PNG frame export; portable `.titlo.json` project files.
+
+### Timing
+
+- Tap mode: 0.5× / 0.75× / 1×, undo, skip, repeat line, haptics.
+  Keyboard: `Space`, `K`, `⌫`, `←`, `→`, `1` `2` `3`.
+- One-line re-tap: correct only the line that is off.
+- Per-word start/end sliders with 10 ms steps; edges stop at the neighbouring word.
+- Global offset for Bluetooth latency.
+- Every word remembers where its time came from: `tap`, `auto`, `aligned`, `spread` or `manual`,
+  and the editor colours it accordingly.
+
+### Speech recognition
+
+- Whisper through Transformers.js, running in a Web Worker on WebGPU (WASM fallback).
+- Three model sizes: tiny (~40 MB), base (~80–150 MB), small (~250–500 MB).
+- Word-level timestamps aligned to the recognised text, so a trailing letter can never jump into
+  the next word.
+- Language picker (`bs`, `hr`, `sr`, `en`, auto-detect).
+  > Tip: for Bosnian, Croatian often transcribes better, because the model has more training data
+  > for it. Try both on the same clip.
+
+### Export
+
+- **MP4, H.264 + AAC**, captions and filter burned in, rendered by the same renderer as the preview.
+- Audio is passed through without re-encoding.
+- Video is decoded frame by frame (`VideoDecoder`), rendered on an `OffscreenCanvas`, encoded with
+  `VideoEncoder` and muxed with `mp4-muxer`.
+- The finished file is saved or shared through the system share sheet on mobile.
+- Limits: 5 minutes per export, 1080p maximum output.
+
+## Quick start
 
 ```bash
 pnpm install
 pnpm dev
-# otvori http://127.0.0.1:5173
+# open http://127.0.0.1:5173
 ```
 
-Na početnom ekranu klikni **Isprobaj s primjerom** ako nemaš svoj snimak.
-
-Ostale komande:
+No video at hand? Click **Isprobaj s primjerom** on the start screen.
 
 ```bash
-pnpm test        # testovi jezgra (Vitest)
-pnpm typecheck   # TypeScript u svim paketima
-pnpm build       # produkcijski build web aplikacije
+pnpm test        # core tests (Vitest)
+pnpm typecheck   # TypeScript across all packages
+pnpm build       # production web build + PWA
 ```
 
-### Mobilna aplikacija
+Requirements: Node 22+, pnpm 9+. No API keys, no backend.
 
-Ista aplikacija je zapakovana i za Android i iOS preko Capacitora:
+## Mobile
+
+The same web app is packaged with [Capacitor](https://capacitorjs.com) for Android and iOS. There is
+no second implementation and no second renderer.
 
 ```bash
 pnpm build
 npx cap sync
-npx cap open android   # ili: npx cap open ios
+npx cap open android   # or: npx cap open ios
 ```
 
-Android build traži JDK 21 (`JAVA_HOME=/usr/local/opt/openjdk@21`), ne Java 25. Detalji i
-ograničenja: [docs/mobile.md](docs/mobile.md).
+Android CLI build (debug APK):
 
-## Kako radi
-
-Tri načina tempiranja, od najpouzdanijeg ka najbržem:
-
-1. **Tapkanje.** Tekst je već tu, ti tapkaš. Radi za svaki jezik, svaki sadržaj, bez modela.
-2. **Automatski predlog.** Analiza govora na uređaju popuni vremena. Ti popraviš ono što ne valja,
-   red po red.
-3. **Prepoznavanje govora.** Whisper napiše tekst i vremena. Ti ispraviš samo pogrešne riječi.
-
-### Kako popraviti prepoznati tekst
-
-1. Izaberi jezik i model, pa klikni **Prepoznaj i napiši tekst**. Prvi put se model skida.
-2. U editoru klikni riječ u traci ispod videa. Pojavi se polje **Ispravi riječ**.
-3. Upiši tačnu riječ i pritisni Enter. Vrijeme ostaje isto; ako upišeš više riječi, one podijele
-   trajanje.
-4. Prevuci titl po pregledu da promijeniš poziciju. X/Y/širina su i u kartici **Stil**.
-
-Ako je tekst loš na bosanskom, probaj jezik **Hrvatski** — model ima više podataka za njega i
-češće pogodi bosanski nego oznaka `bs`. Model **Preporučeno** (`small`) je osjetno bolji od `base`
-i `tiny`.
-
-Boja u traci riječi kaže odakle vrijeme dolazi:
-
-| Boja | Izvor | Značenje |
-| --- | --- | --- |
-| žuta | `tap` | ti si tapnuo |
-| plava | `auto`, `aligned` | automatika ili uvezeni titl |
-| isprekidana | `spread` | raspoređeno između susjeda |
-| ljubičasta | `manual` | ručno pomjereno u editoru |
-
-## Struktura
-
-```
-apps/web/               React + Vite prototip (pregled, tapkanje, editor)
-packages/core/          model projekta, tekst, tempiranje, animacije, formati
-packages/plugins/       stilovi i filteri kao JSON
-design/                 originalni dizajn ekrana
-docs/                   arhitektura i format pluginova
+```bash
+cd android
+JAVA_HOME=/usr/local/opt/openjdk@21 ./gradlew assembleDebug
+# android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Pravilo zavisnosti: **`core` ne uvozi ništa iz Reacta ni iz Skije.** Sve što je pametno je tamo i
-testira se bez telefona. Aplikacija samo spaja dijelove.
+JDK 21 is required; Java 25 is rejected by the current Gradle/AGP toolchain.
 
-## Pravila koja kod poštuje
+iOS simulator build:
 
-- Vrijeme je uvijek **pozicija videa**, nikad sistemski sat. Zato usporeno puštanje i zastoj ne
-  kvare vremena.
-- Vremena su cijeli brojevi milisekundi od početka **originalnog** videa. Skraćivanje i globalni
-  pomak ne mijenjaju vremena riječi.
-- Pozicije i veličine su udjeli 0..1, nikad pikseli.
-- Animacija dolazi iz vremena riječi, ne iz sata, pa je svaki izvoz isti.
-- Izmjena teksta čuva vrijeme riječi koje su ostale iste.
-- Nijedan plugin nije izvršni kod: shader ne čita fajlove ni mrežu, JSON ne radi ništa sam.
+```bash
+xcodebuild -project ios/App/App.xcodeproj -scheme App \
+  -sdk iphonesimulator -configuration Debug \
+  CODE_SIGNING_ALLOWED=NO build
+```
 
-## Licenca
+Details, icons and splash: [docs/mobile.md](docs/mobile.md).
 
-Aplikacija i jezgro: **MPL-2.0**. Stilovi i filteri: **MIT**. Fontovi: OFL. Detalji u
-[LICENSE](LICENSE) i [docs/plugin-format.md](docs/plugin-format.md).
+## How it works
 
-Doprinos: [CONTRIBUTING.md](CONTRIBUTING.md). Privatnost: [PRIVACY.md](PRIVACY.md). Plan:
-[ROADMAP.md](ROADMAP.md).
+```
+video file
+   │
+   ├── tap timing ─────────────┐
+   ├── energy-based auto-time ─┤
+   └── Whisper (on device) ────┤
+                               ▼
+                     Project (JSON, ms, 0..1)
+                               │
+                  ┌────────────┴────────────┐
+                  ▼                         ▼
+          preview renderer            MP4 export encoder
+          (canvas / Skia)             (WebCodecs + muxer)
+```
+
+- All timing logic lives in `packages/core`, a platform-agnostic TypeScript package. It imports
+  nothing from React, Skia or the DOM.
+- Time is always the video position, never the system clock. Slowing playback or stalling cannot
+  corrupt timings.
+- Times are integer milliseconds from the start of the original video. Trimming and the global
+  offset do not change word times.
+- Positions and sizes are fractions from 0 to 1, never pixels.
+- The caption renderer is deterministic: same inputs, same frame, on every platform.
+
+More detail: [docs/architecture.md](docs/architecture.md).
+
+## Editing
+
+- **Fix one word:** click a word in the strip below the preview, edit it, press Enter. The timing is
+  preserved. If you type several words, they split the existing duration.
+- **Move the caption:** drag it on the preview. X, Y and width are in the **Style** tab; **Reset to
+  centre** puts it back.
+- **Wrong line?** Use **Tap this line only** in the **Time** tab. Only that line is re-timed; the
+  rest of the project is untouched.
+- **Changed your mind about the text?** The **Text** tab diffs word by word: unchanged words keep
+  their timings, new words are distributed between neighbours.
+
+## Project structure
+
+```
+apps/web/               React + Vite app (web, PWA, Capacitor shell)
+packages/core/          project model, text, timing, captions, formats, transcript alignment
+packages/plugins/       caption styles and filters as small JSON files
+android/                Capacitor Android project
+ios/                    Capacitor iOS project
+docs/                   architecture, plugin format, mobile notes
+design/                 original screen design
+scripts/                icon and splash generator
+```
+
+Rules: `core` must stay free of React Native, Skia and browser APIs. Plugins are data, never
+executable code. Every function that touches time gets a test.
+
+## Design rules
+
+- **One screen, one task.** Text, tapping and editing are separate steps.
+- **The thumb owns the lower half.** Frequent actions sit at the bottom.
+- **Colour carries meaning.** Yellow = tapped, blue = automatic, dashed = distributed, violet =
+  manual.
+- **Nothing is lost.** There is no Save button; the draft and the project are stored locally.
+- **Preview equals export.** The same renderer draws both.
+
+## Testing
+
+```bash
+pnpm test
+```
+
+Current coverage includes text segmentation and normalization, tap rules, spreading, manual time
+clamping, text diffs that preserve timings, caption layout and animation, transcript alignment
+(including sub-word chunks), SRT round-trips and project migration.
+
+CI runs typecheck, tests and the production build on every push.
+
+## Roadmap
+
+1. ~~Tap prototype~~ — done
+2. ~~Core and project format~~ — done
+3. MVP: styles, filters, MP4 export, mobile shells — mostly done; release build and real-device
+   testing remain
+4. Public opening: playground, good first issues, first outside contribution
+5. Automation: text/audio alignment, custom vocabulary
+6. Web and desktop (Tauri)
+7. Community gallery and audio-reactive visuals
+
+Full list with exit criteria: [ROADMAP.md](ROADMAP.md).
+
+## Contributing
+
+The goal is that the first contribution takes one afternoon, without knowing React Native.
+
+- Add a caption style in ~15 minutes: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Add a filter: [docs/plugin-format.md](docs/plugin-format.md)
+
+Before a pull request: `pnpm typecheck && pnpm test && pnpm build`.
+
+The interface and documentation are currently in Bosnian; English translations and English docs
+are welcome.
+
+## Privacy
+
+Nothing leaves the device. No analytics, no ads, no accounts. Video and audio are never uploaded.
+
+The only network request is the optional one-time speech-model download from Hugging Face when you
+run recognition for the first time; after that it is served from the browser cache. See
+[PRIVACY.md](PRIVACY.md).
+
+## License
+
+- App and core: **MPL-2.0** — see [LICENSE](LICENSE)
+- Styles and filters: **MIT** — see [packages/plugins/LICENSE](packages/plugins/LICENSE)
+- Fonts: **OFL** (Inter, Space Grotesk, JetBrains Mono)
+
+Titlo is not affiliated with Instagram, TikTok, YouTube, OpenAI or Hugging Face.
