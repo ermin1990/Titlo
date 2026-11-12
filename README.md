@@ -1,5 +1,7 @@
 # Titlo
 
+[![CI](https://github.com/ermin1990/Titlo/actions/workflows/ci.yml/badge.svg)](https://github.com/ermin1990/Titlo/actions/workflows/ci.yml)
+
 Animirani titlovi riječ po riječ i filteri za kratke videe. **Sve ostaje na uređaju** — bez
 servera, bez naloga, bez slanja videa.
 

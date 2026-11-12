@@ -28,5 +28,13 @@
     "@capacitor/filesystem": "^8.1.5",
     "@capacitor/share": "^8.0.3",
     "@capacitor/status-bar": "^8.0.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ermin1990/Titlo.git"
+  },
+  "homepage": "https://github.com/ermin1990/Titlo#readme",
+  "bugs": {
+    "url": "https://github.com/ermin1990/Titlo/issues"
   }
 }
