@@ -107,11 +107,11 @@ h3 {
 }
 
 .brand-mark {
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
-  background: var(--yellow);
-  box-shadow: 0 0 0 3px rgba(255, 225, 74, 0.12);
+  display: block;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  box-shadow: 0 0 18px rgba(255, 225, 74, 0.28);
 }
 
 .brand small {

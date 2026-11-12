@@ -26,6 +26,8 @@ export interface SourceRenderOptions {
   filterCss: string | null;
   filterIntensity: number;
   timeMs: number;
+  /** Rotacija kadra iz MP4 (dekoder je ne primjenjuje, za razliku od <video>). */
+  rotation?: number;
 }
 
 export interface Rect {
@@ -86,7 +88,28 @@ function roundedRect(
   ctx.closePath();
 }
 
-function paint(options: RenderOptions, source: CanvasImageSource | null): void {
+/** Crta kadar u pravougaonik, okrenut za `rotation` stepeni oko centra. */
+function drawSource(
+  ctx: CanvasRenderingContext2D,
+  source: CanvasImageSource,
+  rect: Rect,
+  rotation: number,
+): void {
+  if (!rotation) {
+    ctx.drawImage(source, rect.x, rect.y, rect.w, rect.h);
+    return;
+  }
+  const sideways = rotation === 90 || rotation === 270;
+  const w = sideways ? rect.h : rect.w;
+  const h = sideways ? rect.w : rect.h;
+  ctx.save();
+  ctx.translate(rect.x + rect.w / 2, rect.y + rect.h / 2);
+  ctx.rotate((rotation * Math.PI) / 180);
+  ctx.drawImage(source, -w / 2, -h / 2, w, h);
+  ctx.restore();
+}
+
+function paint(options: RenderOptions, source: CanvasImageSource | null, rotation = 0): void {
   const { ctx, width, height, project, style, timeMs } = options;
 
   ctx.save();
@@ -98,7 +121,9 @@ function paint(options: RenderOptions, source: CanvasImageSource | null): void {
   const rect = fitRect(width, height, ratio);
 
   if (source) {
-    ctx.drawImage(source, rect.x, rect.y, rect.w, rect.h);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    drawSource(ctx, source, rect, rotation);
     if (options.filterCss && options.filterIntensity > 0) {
       ctx.save();
       ctx.beginPath();
@@ -106,7 +131,7 @@ function paint(options: RenderOptions, source: CanvasImageSource | null): void {
       ctx.clip();
       ctx.globalAlpha = Math.min(1, Math.max(0, options.filterIntensity));
       ctx.filter = options.filterCss;
-      ctx.drawImage(source, rect.x, rect.y, rect.w, rect.h);
+      drawSource(ctx, source, rect, rotation);
       ctx.restore();
     }
   } else {
@@ -216,15 +241,22 @@ function paint(options: RenderOptions, source: CanvasImageSource | null): void {
         ctx.shadowColor = 'transparent';
         ctx.globalAlpha = Math.min(1, word.alpha) * (pill.opacity ?? 1);
         ctx.fillStyle = pill.color;
-        const fullWidth = ctx.measureText(word.text).width;
-        const padX = (pill.paddingX ?? 0.2) * word.fontSize;
-        const padY = (pill.paddingY ?? 0.08) * word.fontSize;
+        // Pločica prati stvarna slova: širinu riječi i visinu velikih slova
+        // s kvačicama (Č, Š, Ž), pa sjedi tačno iza teksta na svakom fontu.
+        const ink = ctx.measureText(word.text);
+        const reference = ctx.measureText(style.text.uppercase ? 'HČŠŽ' : 'HČgj');
+        const left = -(ink.actualBoundingBoxLeft || ink.width / 2);
+        const right = ink.actualBoundingBoxRight || ink.width / 2;
+        const top = -(reference.actualBoundingBoxAscent || word.fontSize * 0.5);
+        const bottom = reference.actualBoundingBoxDescent || word.fontSize * 0.5;
+        const padX = (pill.paddingX ?? 0.12) * word.fontSize;
+        const padY = (pill.paddingY ?? 0.1) * word.fontSize;
         roundedRect(
           ctx,
-          -fullWidth / 2 - padX,
-          -word.fontSize * 0.6 - padY,
-          fullWidth + padX * 2,
-          word.fontSize * 1.2 + padY * 2,
+          left - padX,
+          top - padY,
+          right - left + padX * 2,
+          bottom - top + padY * 2,
           (pill.radius ?? 0.2) * word.fontSize,
         );
         ctx.fill();
@@ -307,5 +339,6 @@ export function renderSourceFrame(options: SourceRenderOptions): void {
       showBox: false,
     },
     options.source,
+    options.rotation ?? 0,
   );
 }

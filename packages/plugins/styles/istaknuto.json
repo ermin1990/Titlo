@@ -31,9 +31,9 @@
     "background": {
       "color": "#FFE14A",
       "opacity": 1,
-      "paddingX": 0.14,
-      "paddingY": 0.08,
-      "radius": 0.22
+      "paddingX": 0.12,
+      "paddingY": 0.1,
+      "radius": 0.2
     }
   },
   "futureWord": {

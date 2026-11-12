@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
-"""Generiše ikone i splash za PWA, Android i iOS. Pokreni: python3 scripts/generate-icons.py"""
+"""
+Titlo logo: ikone i splash za PWA, Android, iOS i sajt.
+
+Znak je "T" sastavljen od tri riječi titla (gornji red) i stuba. Treća
+riječ je prigušena, kao riječ koja tek dolazi u karaoke titlu. Sve je
+geometrija, bez fonta, pa SVG i PNG izgledaju isto na svakom uređaju.
+
+Pokreni:
+    python3 scripts/generate-icons.py
+    npx capacitor-assets generate --android --ios
+"""
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -7,103 +17,162 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = Path(__file__).resolve().parent.parent
 PUBLIC = ROOT / "apps" / "web" / "public" / "icons"
 ASSETS = ROOT / "assets"
+SITE = ROOT / "site"
 
-BG = (16, 16, 18, 255)
-YELLOW = (255, 225, 74, 255)
-INK = (16, 16, 18, 255)
-TEXT = (244, 243, 238, 255)
-MUTED = (168, 167, 160, 255)
+BG = (16, 16, 18)
+YELLOW_TOP = (255, 228, 92)
+YELLOW_BOTTOM = (255, 196, 36)
+INK = (16, 16, 18)
+TEXT = (244, 243, 238)
+MUTED = (168, 167, 160)
+UPCOMING_ALPHA = 0.34
 
-FONT_BOLD = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
-FONT_REG = "/System/Library/Fonts/Supplemental/Arial.ttf"
+# Geometrija na platnu 1024 × 1024. Prečka "T" su tri riječi; srednja riječ
+# i stub su jedan oblik, pa se znak čita kao slovo, a ne kao tri tačke.
+PILL_Y = (226, 346)
+WORDS = [(140, 380), (400, 624), (644, 884)]
+STEM = (400, 226, 624, 790)
+RADIUS = 60
+SS = 4  # supersampling za glatke ivice
 
 
-def font(path: str, size: int) -> ImageFont.FreeTypeFont:
+def lerp(a: tuple, b: tuple, t: float) -> tuple:
+    return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
+
+
+def gradient(size: int) -> Image.Image:
+    image = Image.new("RGB", (1, size))
+    for y in range(size):
+        image.putpixel((0, y), lerp(YELLOW_TOP, YELLOW_BOTTOM, y / max(1, size - 1)))
+    return image.resize((size, size))
+
+
+def draw_mark(size: int, scale: float, color=INK) -> Image.Image:
+    """Znak na providnoj podlozi, centriran; `scale` je udio punog znaka."""
+    big = size * SS
+    k = big / 1024 * scale
+    shift = big / 2 - 512 * k
+
+    def box(x0: float, y0: float, x1: float, y1: float) -> tuple:
+        return (shift + x0 * k, shift + y0 * k, shift + x1 * k, shift + y1 * k)
+
+    solid = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(solid)
+    radius = RADIUS * k
+    x0, x1 = WORDS[0]
+    draw.rounded_rectangle(box(x0, PILL_Y[0], x1, PILL_Y[1]), radius=radius, fill=(*color, 255))
+    draw.rounded_rectangle(box(*STEM), radius=radius, fill=(*color, 255))
+
+    ghost = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+    gx0, gx1 = WORDS[2]
+    ImageDraw.Draw(ghost).rounded_rectangle(
+        box(gx0, PILL_Y[0], gx1, PILL_Y[1]), radius=radius, fill=(*color, round(255 * UPCOMING_ALPHA))
+    )
+    return Image.alpha_composite(ghost, solid).resize((size, size), Image.LANCZOS)
+
+
+def tile(size: int, scale: float = 1.0, rounded: bool = False) -> Image.Image:
+    """Žuta pločica sa znakom. `rounded` daje providne uglove (za 'any' ikone)."""
+    image = Image.alpha_composite(gradient(size).convert("RGBA"), draw_mark(size, scale))
+    if rounded:
+        mask = Image.new("L", (size * SS, size * SS), 0)
+        ImageDraw.Draw(mask).rounded_rectangle(
+            (0, 0, size * SS - 1, size * SS - 1), radius=size * SS * 0.225, fill=255
+        )
+        image.putalpha(mask.resize((size, size), Image.LANCZOS))
+    return image
+
+
+def font(size: int) -> ImageFont.FreeTypeFont:
+    """Debeli sistemski font za natpis na splash ekranu (woff Pillow ne čita)."""
+    collection = Path("/System/Library/Fonts/Avenir Next.ttc")
+    for index in range(16):
+        try:
+            candidate = ImageFont.truetype(str(collection), size, index=index)
+        except OSError:
+            break
+        if candidate.getname()[1] == "Bold":
+            return candidate
     try:
-        return ImageFont.truetype(path, size)
+        return ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", size)
     except OSError:
         return ImageFont.load_default(size)
 
 
-def draw_icon(size: int, padding_ratio: float) -> Image.Image:
-    image = Image.new("RGBA", (size, size), BG)
+def splash(size: int) -> Image.Image:
+    image = Image.new("RGBA", (size, size), (*BG, 255))
+    side = int(size * 0.2)
+    x0 = (size - side) // 2
+    y0 = int(size * 0.36)
+    image.alpha_composite(tile(side, rounded=True), (x0, y0))
     draw = ImageDraw.Draw(image)
-    side = int(size * (1 - padding_ratio * 2))
-    offset = (size - side) // 2
-    radius = int(side * 0.24)
-    draw.rounded_rectangle(
-        (offset, offset, offset + side, offset + side),
-        radius=radius,
-        fill=YELLOW,
-    )
-    glyph = font(FONT_BOLD, int(side * 0.62))
-    draw.text(
-        (size / 2, size / 2 - side * 0.03),
-        "T",
-        font=glyph,
-        fill=INK,
-        anchor="mm",
-    )
+    draw.text((size / 2, y0 + side + size * 0.085), "Titlo", font=font(int(size * 0.07)), fill=TEXT, anchor="mm")
     return image
 
 
-def draw_splash(size: int) -> Image.Image:
-    image = Image.new("RGBA", (size, size), BG)
-    draw = ImageDraw.Draw(image)
-    icon_side = int(size * 0.24)
-    x0 = (size - icon_side) // 2
-    y0 = int(size * 0.38)
-    draw.rounded_rectangle(
-        (x0, y0, x0 + icon_side, y0 + icon_side),
-        radius=int(icon_side * 0.24),
-        fill=YELLOW,
+def svg_mark(color: str = "#101012") -> str:
+    height = PILL_Y[1] - PILL_Y[0]
+    a0, a1 = WORDS[0]
+    c0, c1 = WORDS[2]
+    x0, y0, x1, y1 = STEM
+    return (
+        f'<g fill="{color}">'
+        f'<rect x="{a0}" y="{PILL_Y[0]}" width="{a1 - a0}" height="{height}" rx="{RADIUS}"/>'
+        f'<rect x="{x0}" y="{y0}" width="{x1 - x0}" height="{y1 - y0}" rx="{RADIUS}"/>'
+        f'<rect x="{c0}" y="{PILL_Y[0]}" width="{c1 - c0}" height="{height}" rx="{RADIUS}" fill-opacity="{UPCOMING_ALPHA}"/>'
+        "</g>"
     )
-    glyph = font(FONT_BOLD, int(icon_side * 0.62))
-    draw.text(
-        (x0 + icon_side / 2, y0 + icon_side / 2 - icon_side * 0.03),
-        "T",
-        font=glyph,
-        fill=INK,
-        anchor="mm",
+
+
+def svg_logo() -> str:
+    top = "#%02x%02x%02x" % YELLOW_TOP
+    bottom = "#%02x%02x%02x" % YELLOW_BOTTOM
+    return (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">'
+        '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">'
+        f'<stop offset="0" stop-color="{top}"/><stop offset="1" stop-color="{bottom}"/>'
+        "</linearGradient></defs>"
+        '<rect width="1024" height="1024" rx="230" fill="url(#g)"/>' + svg_mark() + "</svg>\n"
     )
-    wordmark = font(FONT_BOLD, int(size * 0.075))
-    draw.text(
-        (size / 2, y0 + icon_side + size * 0.09),
-        "Titlo",
-        font=wordmark,
-        fill=TEXT,
-        anchor="mm",
-    )
-    tagline = font(FONT_REG, int(size * 0.028))
-    draw.text(
-        (size / 2, y0 + icon_side + size * 0.145),
-        "titlovi u ritmu",
-        font=tagline,
-        fill=MUTED,
-        anchor="mm",
-    )
-    return image
 
 
 def save(image: Image.Image, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    image.save(path)
+    image.save(path, optimize=True)
+    print("napisano", path.relative_to(ROOT))
+
+
+def write(text: str, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
     print("napisano", path.relative_to(ROOT))
 
 
 def main() -> None:
-    icon = draw_icon(1024, 0.18)
-    maskable = draw_icon(1024, 0.26)
+    full = tile(1024)
+    rounded = tile(1024, rounded=True)
 
-    save(icon, ASSETS / "icon.png")
-    save(maskable, ASSETS / "icon-maskable.png")
-    save(draw_splash(2732), ASSETS / "splash.png")
-    save(draw_splash(2732), ASSETS / "splash-dark.png")
+    # Ulazi za `npx capacitor-assets generate` (Android adaptive + iOS).
+    save(full.convert("RGB"), ASSETS / "icon-only.png")
+    save(draw_mark(1024, 0.74), ASSETS / "icon-foreground.png")
+    save(gradient(1024), ASSETS / "icon-background.png")
+    save(full.convert("RGB"), ASSETS / "icon.png")
+    save(tile(1024, scale=0.78).convert("RGB"), ASSETS / "icon-maskable.png")
+    save(splash(2732), ASSETS / "splash.png")
+    save(splash(2732), ASSETS / "splash-dark.png")
+    write(svg_logo(), ASSETS / "logo.svg")
 
-    save(icon.resize((512, 512), Image.LANCZOS), PUBLIC / "icon-512.png")
-    save(icon.resize((192, 192), Image.LANCZOS), PUBLIC / "icon-192.png")
-    save(maskable.resize((512, 512), Image.LANCZOS), PUBLIC / "maskable-512.png")
-    save(icon.resize((180, 180), Image.LANCZOS), PUBLIC / "apple-touch-icon.png")
+    # PWA: 'any' ikone sa zaobljenim uglovima; maskable i iOS preko cijelog kvadrata.
+    save(rounded.resize((512, 512), Image.LANCZOS), PUBLIC / "icon-512.png")
+    save(rounded.resize((192, 192), Image.LANCZOS), PUBLIC / "icon-192.png")
+    save(tile(512, scale=0.78).convert("RGB"), PUBLIC / "maskable-512.png")
+    save(full.resize((180, 180), Image.LANCZOS).convert("RGB"), PUBLIC / "apple-touch-icon.png")
+    write(svg_logo(), PUBLIC / "logo.svg")
+
+    # Sajt.
+    save(rounded.resize((192, 192), Image.LANCZOS), SITE / "icon-192.png")
+    save(full.resize((180, 180), Image.LANCZOS).convert("RGB"), SITE / "apple-touch-icon.png")
+    write(svg_logo(), SITE / "logo.svg")
 
 
 if __name__ == "__main__":

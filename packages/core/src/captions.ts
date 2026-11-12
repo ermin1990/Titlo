@@ -174,29 +174,32 @@ function layoutRows(
 ): RowLayout[] | null {
   const rows: RowLayout[] = [];
   let current: RowLayout = { words: [], width: 0 };
-  let index = 0;
+  let tooWide = false;
   /**
    * Malo zraka između riječi, da animacija isticanja ne spoji susjede.
    * Pločica iza riječi treba više mjesta.
    */
-  const gapFactor = style.activeWord.background ? 1.9 : 1.12;
+  const gapFactor = style.activeWord.background ? 1.5 : 1.12;
 
-  for (const word of line.words) {
-    if (word.source === 'spread' && word.endMs <= word.startMs) continue;
+  line.words.forEach((word, index) => {
+    // Riječ bez stvarnog vremena se ne crta, ali indeksi ostaju tačni,
+    // inače bi se istakla pogrešna riječ.
+    if (word.source === 'spread' && word.endMs <= word.startMs) return;
     const text = displayText(word.text, style, locale);
     const width = measure(text, fontSize);
     const space = current.words.length > 0 ? measure(' ', fontSize) * gapFactor : 0;
 
-    if (width > maxWidth) return null;
+    if (width > maxWidth) tooWide = true;
 
     if (current.width + space + width > maxWidth && current.words.length > 0) {
       rows.push(current);
       current = { words: [], width: 0 };
     }
-    current.words.push({ wordIndex: index, text, width, spaceBefore: current.words.length > 0 ? space : 0 });
-    current.width += (current.words.length > 1 ? space : 0) + width;
-    index += 1;
-  }
+    const spaceBefore = current.words.length > 0 ? space : 0;
+    current.words.push({ wordIndex: index, text, width, spaceBefore });
+    current.width += spaceBefore + width;
+  });
+  if (tooWide) return null;
   if (current.words.length > 0) rows.push(current);
   return rows;
 }
@@ -226,20 +229,46 @@ export function buildCaptionFrame(input: LayoutInput): CaptionFrame {
   const maxWidth = box.width * videoWidth * 0.97;
   const baseSize = style.font.size * videoHeight;
 
+  // Font se smanji najviše tri puta (do ~68 %); duži red ide u stranice.
+  // Riječ šira od bloka smanjuje font dalje, inače se ne bi vidjela cijela.
   let fontSize = baseSize;
   let rows: RowLayout[] | null = null;
-  for (let attempt = 0; attempt < 6; attempt += 1) {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
     rows = layoutRows(line, fontSize, maxWidth, style, locale, measure);
-    if (rows && rows.length <= style.layout.maxLines) break;
+    if (rows && (rows.length <= style.layout.maxLines || attempt >= 3)) break;
     fontSize *= 0.88;
   }
   if (!rows || rows.length === 0) return empty;
-  if (rows.length > style.layout.maxLines) rows = rows.slice(-style.layout.maxLines);
+
+  const activeIndex = line.words.findIndex((word) => time >= word.startMs && time < word.endMs);
+
+  // Dug red se prikazuje u "stranicama" od najviše maxLines redova: vidi se
+  // stranica s riječju koja se upravo izgovara, nikad odsječen početak.
+  let pageFirstWord = first;
+  let pageLastWord = last;
+  if (rows.length > style.layout.maxLines) {
+    let currentIndex = activeIndex;
+    if (currentIndex < 0) {
+      currentIndex = 0;
+      line.words.forEach((word, index) => {
+        if (word.startMs <= time) currentIndex = index;
+      });
+    }
+    const rowOfCurrent = Math.max(
+      0,
+      rows.findIndex((row) => row.words.some((item) => item.wordIndex >= currentIndex)),
+    );
+    const page = Math.floor(rowOfCurrent / style.layout.maxLines);
+    rows = rows.slice(page * style.layout.maxLines, (page + 1) * style.layout.maxLines);
+    const pageWords = rows.flatMap((row) => row.words.map((item) => line.words[item.wordIndex]!));
+    pageFirstWord = pageWords[0] ?? first;
+    pageLastWord = pageWords[pageWords.length - 1] ?? last;
+  }
 
   const lineIn = animationDuration(style.animations.lineIn);
   const lineOut = animationDuration(style.animations.lineOut);
-  const lineElapsed = time - first.startMs;
-  const lineRemaining = last.endMs - time;
+  const lineElapsed = time - pageFirstWord.startMs;
+  const lineRemaining = (pageLastWord === last ? last.endMs : pageLastWord.endMs) - time;
 
   const lineEffects = mix(
     lineElapsed < lineIn ? evaluate(style.animations.lineIn, lineElapsed) : { ...IDLE },
@@ -250,7 +279,6 @@ export function buildCaptionFrame(input: LayoutInput): CaptionFrame {
   const rowHeight = fontSize * lineHeightFactor;
   const centerY = box.y * videoHeight;
   const strokeWidth = (style.text.strokeWidth ?? 0) * fontSize;
-  const activeIndex = line.words.findIndex((word) => time >= word.startMs && time < word.endMs);
   const activeWordId = activeIndex >= 0 ? line.words[activeIndex]!.id : null;
 
   const words: CaptionFrameWord[] = [];

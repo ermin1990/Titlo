@@ -79,6 +79,18 @@ interface VideoSamples {
   description?: Uint8Array;
   width: number;
   height: number;
+  /** Rotacija iz MP4 matrice (0, 90, 180, 270). Telefoni snimaju položeno pa okrenu. */
+  rotation: number;
+}
+
+/** Ugao rotacije iz MP4 matrice prikaza (16.16 fixed point). */
+function matrixRotation(matrix: unknown): number {
+  if (!matrix || typeof (matrix as ArrayLike<number>).length !== 'number') return 0;
+  const values = matrix as ArrayLike<number>;
+  const a = (values[0] ?? 65536) / 65536;
+  const b = (values[1] ?? 0) / 65536;
+  const degrees = Math.round((Math.atan2(b, a) * 180) / Math.PI);
+  return ((Math.round(degrees / 90) * 90) % 360 + 360) % 360;
 }
 
 function readAudioConfig(track: unknown): Uint8Array | undefined {
@@ -237,6 +249,7 @@ async function demux(fileUrl: string): Promise<Demuxed> {
       video?: { width?: number; height?: number };
       track_width?: number;
       track_height?: number;
+      matrix?: ArrayLike<number>;
     };
     const codec = track.codec ?? 'avc1.64001f';
     if (!codec.startsWith('avc1') && !codec.startsWith('avc3')) {
@@ -257,7 +270,8 @@ async function demux(fileUrl: string): Promise<Demuxed> {
         isKey: Boolean(sample.is_sync),
       });
     }
-    normalized.sort((a, b) => a.timestamp - b.timestamp);
+    // Uzorci ostaju u redoslijedu dekodiranja (kako su u fajlu). Sortiranje po
+    // vremenu prikaza lomi video s B-kadrovima, koje snimaju skoro svi telefoni.
 
     if (normalized.length > 0) {
       video = {
@@ -266,6 +280,7 @@ async function demux(fileUrl: string): Promise<Demuxed> {
         description: readAvcDescription(mp4.getTrackById(track.id)),
         width: track.video?.width ?? track.track_width ?? 1920,
         height: track.video?.height ?? track.track_height ?? 1080,
+        rotation: matrixRotation(track.matrix),
       };
     }
   }
@@ -273,8 +288,8 @@ async function demux(fileUrl: string): Promise<Demuxed> {
   return { audio, video };
 }
 
-async function pickCodec(width: number, height: number, bitrate: number): Promise<string> {
-  const candidates = ['avc1.640028', 'avc1.4d0028', 'avc1.42001f'];
+async function pickCodec(width: number, height: number, bitrate: number, fps: number): Promise<string> {
+  const candidates = ['avc1.64002a', 'avc1.640028', 'avc1.4d002a', 'avc1.4d0028', 'avc1.42001f'];
   for (const codec of candidates) {
     try {
       const support = await VideoEncoder.isConfigSupported({
@@ -282,7 +297,7 @@ async function pickCodec(width: number, height: number, bitrate: number): Promis
         width,
         height,
         bitrate,
-        framerate: 30,
+        framerate: fps,
       });
       if (support.supported) return codec;
     } catch {
@@ -327,7 +342,17 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
   }
 
   const { width, height } = exportSize(project);
-  const bitrate = Math.min(16_000_000, Math.round(width * height * 30 * 0.12));
+
+  // Brzina kadrova i bitrate prate original, da izvoz ne bude lošiji od snimka.
+  const first = video.samples.reduce((min, sample) => Math.min(min, sample.timestamp), Infinity);
+  const last = video.samples.reduce((max, sample) => Math.max(max, sample.timestamp + sample.duration), 0);
+  const spanSeconds = Math.max(0.5, (last - first) / 1_000_000);
+  const fps = Math.min(60, Math.max(24, Math.round(video.samples.length / spanSeconds)));
+  const sourceBytes = video.samples.reduce((sum, sample) => sum + sample.data.byteLength, 0);
+  const sourceBitrate = (sourceBytes * 8) / spanSeconds;
+  const bitrate = Math.round(
+    Math.min(24_000_000, Math.max(width * height * fps * 0.15, sourceBitrate * 1.1, 4_000_000)),
+  );
 
   const target = new ArrayBufferTarget();
   const muxer = new Muxer({
@@ -360,7 +385,7 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
   const ctx = canvas.getContext('2d') as unknown as CanvasRenderingContext2D | null;
   if (!ctx) throw new Error('Canvas za izvoz nije dostupan.');
 
-  const codec = await pickCodec(width, height, bitrate);
+  const codec = await pickCodec(width, height, bitrate, fps);
   let encoderError: Error | null = null;
   const encoder = new VideoEncoder({
     output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
@@ -373,7 +398,7 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
     width,
     height,
     bitrate,
-    framerate: 30,
+    framerate: fps,
     avc: { format: 'avc' },
     latencyMode: 'quality',
   });
@@ -400,6 +425,7 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
           filterCss,
           filterIntensity,
           timeMs,
+          rotation: video.rotation,
         });
 
         const timestamp = Math.max(0, Math.round((timeMs - startMs) * 1000));
@@ -409,7 +435,7 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
             timestamp,
             duration: Math.max(1, Math.round(frame.duration ?? 1_000_000 / 30)),
           });
-          encoder.encode(out, { keyFrame: frameIndex % 60 === 0 });
+          encoder.encode(out, { keyFrame: frameIndex % (fps * 2) === 0 });
           out.close();
           frameIndex += 1;
           encoded += 1;
@@ -457,6 +483,11 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
     }
   }
 
+  // Dekoder se sam zatvori kad javi grešku; tada je ta greška pravi uzrok.
+  if (decoderError || decoder.state === 'closed') {
+    if (encoder.state !== 'closed') encoder.close();
+    throw decoderError ?? new Error('Dekoder videa je zatvoren prije kraja.');
+  }
   await decoder.flush();
   decoder.close();
 

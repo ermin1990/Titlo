@@ -8,6 +8,25 @@ import {
   exportVideo,
   type ExportProgress,
 } from '../lib/export-video.js';
+import {
+  canShareVideo,
+  saveNeedsTap,
+  saveVideoToDevice,
+  shareVideo,
+  type SaveResult,
+} from '../lib/save-video.js';
+
+interface ExportedVideo {
+  blob: Blob;
+  name: string;
+  summary: string;
+}
+
+function savedMessage(result: SaveResult): string {
+  if (result.method === 'gallery') return `Sačuvano u Galeriju (${result.location ?? 'Movies/Titlo'}).`;
+  if (result.method === 'share') return 'U meniju izaberi „Sačuvaj video“ da ode u Fotografije.';
+  return 'Video je preuzet u folder za preuzimanja.';
+}
 
 interface Props {
   project: Project;
@@ -21,6 +40,8 @@ export default function ExportPanel({ project, videoUrl, getCanvas, onToast }: P
   const [lastMessage, setLastMessage] = useState<{ type: 'ok' | 'error'; text: string } | null>(
     null,
   );
+  const [exported, setExported] = useState<ExportedVideo | null>(null);
+  const [busySaving, setBusySaving] = useState(false);
   const base = safeBaseName(project.media.name);
   const supported = canExportVideo();
 
@@ -103,14 +124,26 @@ export default function ExportPanel({ project, videoUrl, getCanvas, onToast }: P
         onProgress: setExporting,
       });
 
-      await saveBlob(`${base}.mp4`, result.blob);
-      const summary = `Video sačuvan: ${result.width}×${result.height}, ${(
-        result.blob.size /
-        1024 /
-        1024
-      ).toFixed(1)} MB${result.hasAudio ? '' : ' (bez zvuka)'}.`;
-      setLastMessage({ type: 'ok', text: summary });
-      onToast(summary);
+      const now = new Date();
+      const pad = (value: number) => String(value).padStart(2, '0');
+      const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(
+        now.getHours(),
+      )}${pad(now.getMinutes())}`;
+      const video: ExportedVideo = {
+        blob: result.blob,
+        name: `${base}-${stamp}.mp4`,
+        summary: `${result.width}×${result.height}, ${(result.blob.size / 1024 / 1024).toFixed(1)} MB${
+          result.hasAudio ? '' : ' (bez zvuka)'
+        }`,
+      };
+      setExported(video);
+      if (saveNeedsTap()) {
+        const text = `Video je spreman: ${video.summary}. Dodirni „Sačuvaj u Fotografije“.`;
+        setLastMessage({ type: 'ok', text });
+        onToast(text);
+      } else {
+        await saveExported(video);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Izvoz videa nije uspio.';
       setLastMessage({ type: 'error', text: message });
@@ -119,6 +152,32 @@ export default function ExportPanel({ project, videoUrl, getCanvas, onToast }: P
       setExporting(null);
     }
   };
+
+  async function saveExported(video: ExportedVideo) {
+    setBusySaving(true);
+    try {
+      const result = await saveVideoToDevice(video.blob, video.name);
+      const text = `${savedMessage(result)} ${video.summary}.`;
+      setLastMessage({ type: 'ok', text });
+      onToast(savedMessage(result));
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      const text = error instanceof Error ? error.message : 'Video nije sačuvan.';
+      setLastMessage({ type: 'error', text });
+      onToast(text);
+    } finally {
+      setBusySaving(false);
+    }
+  }
+
+  async function shareExported(video: ExportedVideo) {
+    try {
+      await shareVideo(video.blob, video.name);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      onToast(error instanceof Error ? error.message : 'Dijeljenje nije uspjelo.');
+    }
+  }
 
   return (
     <div className="tab-body">
@@ -164,6 +223,24 @@ export default function ExportPanel({ project, videoUrl, getCanvas, onToast }: P
           <div className="disabled-note">
             Ovaj WebView nema WebCodecs, pa ne može da kodira video. Ažuriraj Android System
             WebView ili otvori aplikaciju u Chromeu. SRT/VTT izvoz i PNG kadar rade i dalje.
+          </div>
+        )}
+
+        {exported && !exporting && (
+          <div className="export-row">
+            <button
+              className="btn btn-primary"
+              type="button"
+              disabled={busySaving}
+              onClick={() => void saveExported(exported)}
+            >
+              {busySaving ? 'Čuvam…' : saveNeedsTap() ? 'Sačuvaj u Fotografije' : 'Sačuvaj ponovo'}
+            </button>
+            {canShareVideo() && (
+              <button className="btn" type="button" onClick={() => void shareExported(exported)}>
+                Podijeli
+              </button>
+            )}
           </div>
         )}
 

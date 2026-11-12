@@ -186,7 +186,7 @@ const style: CaptionStyle = {
   schemaVersion: 1,
   id: 'test/style',
   name: { bs: 'Test' },
-  font: { family: 'Inter', weight: 800, size: 0.1 },
+  font: { family: 'Inter', weight: 800, size: 0.06 },
   layout: { maxLines: 2, maxWordsOnScreen: 5, align: 'center' },
   text: { fill: '#FFFFFF', uppercase: true },
   activeWord: { fill: '#FFE14A' },
@@ -232,6 +232,55 @@ describe('kadar titla', () => {
     const early = frame(1610);
     const word = early.words.find((entry) => entry.text === 'PRAVIMO');
     expect(word?.scale).toBeGreaterThan(1);
+  });
+
+  it('dug red prikazuje stranicu s riječju koja se izgovara, ne odsječen početak', () => {
+    const long = buildLines('Prvo zamijesimo tijesto pa ga ostavimo da odmori dok peć grije');
+    long[0]!.words.forEach((word, index) => {
+      word.startMs = 1000 + index * 400;
+      word.endMs = 1400 + index * 400;
+      word.source = 'auto';
+    });
+    const at = (timeMs: number) =>
+      buildCaptionFrame({
+        lines: long,
+        timeMs,
+        offsetMs: 0,
+        style,
+        box: { x: 0.5, y: 0.72, width: 0.84 },
+        videoWidth: 1080,
+        videoHeight: 1920,
+        measure: (text, fontSize) => text.length * fontSize * 0.55,
+      });
+
+    const start = at(1100);
+    expect(start.words[0]?.text).toBe('PRVO');
+    expect(start.words.find((word) => word.isActive)?.text).toBe('PRVO');
+    expect(start.fontSize).toBeGreaterThan(0.06 * 1920 * 0.6);
+
+    const end = at(1000 + 9 * 400 + 100);
+    expect(end.words.find((word) => word.isActive)?.text).toBe('PEĆ');
+    expect(end.words.some((word) => word.text === 'PRVO')).toBe(false);
+  });
+
+  it('riječ bez vremena ne pomjera isticanje na pogrešnu riječ', () => {
+    const lines = buildLines('jedan dva tri');
+    const [one, two, three] = lines[0]!.words;
+    Object.assign(one!, { startMs: 1000, endMs: 1400, source: 'auto' });
+    Object.assign(two!, { startMs: 1400, endMs: 1400, source: 'spread' });
+    Object.assign(three!, { startMs: 1500, endMs: 1900, source: 'auto' });
+    const current = buildCaptionFrame({
+      lines,
+      timeMs: 1600,
+      offsetMs: 0,
+      style,
+      box: { x: 0.5, y: 0.72, width: 0.84 },
+      videoWidth: 1080,
+      videoHeight: 1920,
+      measure: (text, fontSize) => text.length * fontSize * 0.55,
+    });
+    expect(current.words.map((word) => word.text)).toEqual(['JEDAN', 'TRI']);
+    expect(current.words.find((word) => word.isActive)?.text).toBe('TRI');
   });
 });
 

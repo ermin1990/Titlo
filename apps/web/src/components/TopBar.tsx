@@ -21,7 +21,7 @@ export default function TopBar() {
   return (
     <header className="topbar">
       <button className="brand" type="button" onClick={goBack} title="Početak">
-        <span className="brand-mark" />
+        <img className="brand-mark" src={`${import.meta.env.BASE_URL}icons/logo.svg`} alt="" />
         Titlo
         <small>na uređaju</small>
       </button>

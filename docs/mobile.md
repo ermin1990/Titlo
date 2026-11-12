@@ -43,10 +43,25 @@ Za pravi uređaj treba Apple Developer potpis u Xcode-u.
 
 ## Ikone i splash
 
+Logo je geometrija u `scripts/generate-icons.py`: "T" čija je prečka od tri riječi titla,
+a treća je prigušena kao riječ koja tek dolazi. Skripta pravi PWA ikone, `logo.svg`, splash i
+ulaze za Capacitor (`assets/icon-only.png`, `icon-foreground.png`, `icon-background.png`).
+
 ```bash
-python3 scripts/generate-icons.py          # izvor: assets/icon.png, assets/splash.png
+python3 scripts/generate-icons.py
 npx capacitor-assets generate --android --ios
 ```
+
+## Potpis za Android (Beta i release)
+
+```bash
+bash scripts/setup-android-signing.sh
+```
+
+Skripta pravi ključ u `~/.titlo/titlo-release.jks`, lozinku sprema u macOS Keychain
+(`titlo-android-keystore`) i postavlja GitHub tajne `TITLO_*`. Lozinka se nigdje ne zapisuje u
+čistom tekstu. Napravi rezervnu kopiju keystore fajla: bez njega se nove verzije ne mogu
+instalirati preko postojećih.
 
 ## Šta radi u mobilnoj aplikaciji
 
