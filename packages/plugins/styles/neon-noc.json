@@ -36,20 +36,21 @@
     "lineIn": [
       {
         "type": "blur",
-        "durationMs": 220
+        "durationMs": 260
       }
     ],
     "wordIn": [
       {
         "type": "pop",
-        "durationMs": 180,
-        "easing": "backOut"
+        "durationMs": 200,
+        "from": 0.9,
+        "easing": "easeOut"
       }
     ],
     "lineOut": [
       {
         "type": "blur",
-        "durationMs": 160
+        "durationMs": 200
       }
     ]
   }

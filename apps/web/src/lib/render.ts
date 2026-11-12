@@ -209,7 +209,29 @@ function paint(options: RenderOptions, source: CanvasImageSource | null): void {
       }
 
       const drawX = (word.width - ctx.measureText(text).width) / 2;
-      if (word.stroke && word.strokeWidth > 0) {
+
+      const pill = style.activeWord.background;
+      if (pill && word.isActive) {
+        ctx.save();
+        ctx.shadowColor = 'transparent';
+        ctx.globalAlpha = Math.min(1, word.alpha) * (pill.opacity ?? 1);
+        ctx.fillStyle = pill.color;
+        const fullWidth = ctx.measureText(word.text).width;
+        const padX = (pill.paddingX ?? 0.2) * word.fontSize;
+        const padY = (pill.paddingY ?? 0.08) * word.fontSize;
+        roundedRect(
+          ctx,
+          -fullWidth / 2 - padX,
+          -word.fontSize * 0.6 - padY,
+          fullWidth + padX * 2,
+          word.fontSize * 1.2 + padY * 2,
+          (pill.radius ?? 0.2) * word.fontSize,
+        );
+        ctx.fill();
+        ctx.restore();
+      }
+
+      if (word.stroke && word.strokeWidth > 0 && !(pill && word.isActive)) {
         ctx.lineWidth = word.strokeWidth;
         ctx.strokeStyle = word.stroke;
         ctx.lineJoin = 'round';

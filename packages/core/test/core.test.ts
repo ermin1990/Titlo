@@ -12,6 +12,8 @@ import {
   retimeForNewText,
   setWordText,
   setWordTimes,
+  shiftLine,
+  shiftWord,
   normalizeText,
   splitWords,
   TapSession,
@@ -228,6 +230,48 @@ describe('kadar titla', () => {
     const early = frame(1610);
     const word = early.words.find((entry) => entry.text === 'PRAVIMO');
     expect(word?.scale).toBeGreaterThan(1);
+  });
+});
+
+describe('pomjeranje riječi i redova', () => {
+  const timed = () => {
+    const lines = buildLines('jedan dva\ntri četiri');
+    const times = [
+      [1000, 1400],
+      [1400, 1800],
+      [3000, 3400],
+      [3400, 3900],
+    ];
+    lines
+      .flatMap((line) => line.words)
+      .forEach((word, index) => {
+        word.startMs = times[index]![0]!;
+        word.endMs = times[index]![1]!;
+        word.source = 'auto';
+      });
+    return lines;
+  };
+
+  it('pomjera cijelu riječ i čuva trajanje, do susjeda', () => {
+    const lines = timed();
+    const id = lines[0]!.words[1]!.id;
+    const moved = shiftWord(lines, id, 500);
+    const word = moved[0]!.words[1]!;
+    expect(word.startMs).toBe(1900);
+    expect(word.endMs).toBe(2300);
+    expect(word.source).toBe('manual');
+    const blocked = shiftWord(lines, id, -300);
+    expect(blocked[0]!.words[1]!.startMs).toBe(1400);
+  });
+
+  it('pomjera cijeli red bez preklapanja sa susjednim redom', () => {
+    const lines = timed();
+    const later = shiftLine(lines, 1, 250);
+    expect(later[1]!.words.map((word) => word.startMs)).toEqual([3250, 3650]);
+    const earlier = shiftLine(lines, 1, -5000);
+    expect(earlier[1]!.words[0]!.startMs).toBe(1800);
+    expect(earlier[1]!.words[1]!.endMs).toBe(2700);
+    expect(lines[1]!.words[0]!.startMs).toBe(3000);
   });
 });
 

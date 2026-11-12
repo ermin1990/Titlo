@@ -6,6 +6,10 @@ import cistaTraka from '../styles/cista-traka.json';
 import neonNoc from '../styles/neon-noc.json';
 import pisac from '../styles/pisac.json';
 import kinematograf from '../styles/kinematograf.json';
+import meki from '../styles/meki.json';
+import istaknuto from '../styles/istaknuto.json';
+import podcast from '../styles/podcast.json';
+import bombona from '../styles/bombona.json';
 
 import topliFilm from '../filters/topli-film.json';
 import hladniFilm from '../filters/hladni-film.json';
@@ -16,6 +20,10 @@ import san from '../filters/san.json';
 
 export const STYLES = [
   popKaraoke,
+  meki,
+  istaknuto,
+  podcast,
+  bombona,
   plocaMasna,
   cistaTraka,
   neonNoc,

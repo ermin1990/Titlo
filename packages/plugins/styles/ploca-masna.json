@@ -35,24 +35,28 @@
   "animations": {
     "lineIn": [
       {
+        "type": "fade",
+        "durationMs": 200
+      },
+      {
         "type": "slide",
-        "durationMs": 220,
-        "dy": -0.06,
-        "easing": "backOut"
+        "durationMs": 260,
+        "dy": -0.03,
+        "easing": "easeOut"
       }
     ],
     "wordIn": [
       {
         "type": "slide",
-        "durationMs": 180,
-        "dy": -0.022,
-        "easing": "backOut"
+        "durationMs": 220,
+        "dy": -0.012,
+        "easing": "easeOut"
       }
     ],
     "lineOut": [
       {
         "type": "fade",
-        "durationMs": 80
+        "durationMs": 140
       }
     ]
   }

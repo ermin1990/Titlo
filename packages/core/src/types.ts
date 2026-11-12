@@ -134,6 +134,14 @@ export interface CaptionStyle {
     fill: string;
     scale?: number;
     stroke?: string;
+    /** Obojena pločica iza izgovorene riječi. */
+    background?: {
+      color: string;
+      opacity?: number;
+      paddingX?: number;
+      paddingY?: number;
+      radius?: number;
+    };
   };
   /** Riječi koje još nisu izgovorene. */
   futureWord?: { opacity?: number };

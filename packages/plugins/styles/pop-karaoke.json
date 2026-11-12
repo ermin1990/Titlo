@@ -35,20 +35,21 @@
     "lineIn": [
       {
         "type": "fade",
-        "durationMs": 120
+        "durationMs": 180
       }
     ],
     "wordIn": [
       {
         "type": "pop",
-        "durationMs": 140,
-        "easing": "backOut"
+        "durationMs": 180,
+        "from": 0.88,
+        "easing": "easeOut"
       }
     ],
     "lineOut": [
       {
         "type": "fade",
-        "durationMs": 100
+        "durationMs": 160
       }
     ]
   }

@@ -9,7 +9,6 @@ import {
 import {
   flattenWords,
   lineAtTime,
-  setWordText,
   wordAtTime,
   type Project,
   type TimeSource,
@@ -24,6 +23,7 @@ import StylePanel from '../components/StylePanel.js';
 import FilterPanel from '../components/FilterPanel.js';
 import TextPanel from '../components/TextPanel.js';
 import ExportPanel from '../components/ExportPanel.js';
+import WordEditor from '../components/WordEditor.js';
 
 type Tab = 'time' | 'style' | 'filter' | 'text' | 'export';
 
@@ -70,10 +70,8 @@ function Editor({ project }: { project: Project }) {
   const [safeZones, setSafeZones] = useState(true);
   const [showBox, setShowBox] = useState(true);
   const [selectedWordId, setSelectedWordId] = useState<string | null>(null);
-  const [wordDraft, setWordDraft] = useState('');
   const [dragging, setDragging] = useState(false);
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
-  const wordInputRef = useRef<HTMLInputElement>(null);
 
   const style = useMemo(() => resolveStyle(styleById(project.style.id), project), [project]);
   const filter = useMemo(
@@ -172,21 +170,6 @@ function Editor({ project }: { project: Project }) {
     const element = stripRef.current.querySelector<HTMLElement>(`[data-word="${id}"]`);
     element?.scrollIntoView({ inline: 'center', block: 'nearest' });
   }, [activeWord?.id]);
-
-  useEffect(() => {
-    setWordDraft(selectedWord?.text ?? '');
-  }, [selectedWord?.id, selectedWord?.text]);
-
-  const saveWord = () => {
-    if (!selectedWord) return;
-    const value = wordDraft.trim();
-    if (!value || value === selectedWord.text) return;
-    setProject({
-      ...project,
-      lines: setWordText(project.lines, selectedWord.id, value),
-      updatedAt: Date.now(),
-    });
-  };
 
   const onCanvasPointerDown = (event: ReactPointerEvent<HTMLCanvasElement>) => {
     const container = frameRef.current;
@@ -402,57 +385,27 @@ function Editor({ project }: { project: Project }) {
                     seek(word.startMs);
                     setSelectedWordId(word.id);
                   }}
-                  onDoubleClick={() => {
-                    seek(word.startMs);
-                    setSelectedWordId(word.id);
-                    window.setTimeout(() => wordInputRef.current?.focus(), 0);
-                  }}
                 >
                   {word.text}
                 </button>
               ))}
             </div>
 
-            {selectedWord && (
-              <div className="word-editor">
-                <span className="hint">Ispravi riječ</span>
-                <input
-                  ref={wordInputRef}
-                  value={wordDraft}
-                  onChange={(event) => setWordDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') saveWord();
-                    if (event.key === 'Escape') {
-                      setWordDraft(selectedWord.text);
-                      event.currentTarget.blur();
-                    }
-                  }}
-                  aria-label="Tekst odabrane riječi"
-                  spellCheck={false}
-                />
-                <button
-                  className="btn"
-                  type="button"
-                  onClick={saveWord}
-                  disabled={!wordDraft.trim() || wordDraft.trim() === selectedWord.text}
-                >
-                  Sačuvaj
-                </button>
-                <button
-                  className="btn btn-ghost"
-                  type="button"
-                  onClick={() => setWordDraft(selectedWord.text)}
-                  disabled={wordDraft === selectedWord.text}
-                >
-                  Poništi
-                </button>
-              </div>
+            {selectedWord ? (
+              <WordEditor
+                project={project}
+                word={selectedWord}
+                timeMs={timeMs}
+                onChange={setProject}
+                onSeek={seek}
+                onSelectWord={setSelectedWordId}
+              />
+            ) : (
+              <p className="hint">
+                Dodirni riječ iznad da je ispraviš ili pomjeriš. Prevuci titl u pregledu da
+                promijeniš poziciju.
+              </p>
             )}
-
-            <p className="hint">
-              Klikni riječ ispod pa je ispravi, ili je dvaput klikni. Prevuci titl u pregledu da
-              promijeniš poziciju.
-            </p>
 
             <div className="legend">
               <span>

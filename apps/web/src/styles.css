@@ -931,23 +931,27 @@ kbd {
 
 .word-editor {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 10px 12px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
   border: 1px solid rgba(255, 225, 74, 0.32);
-  border-radius: 11px;
+  border-radius: 12px;
   background: rgba(255, 225, 74, 0.05);
+}
+
+.word-editor-text {
+  display: flex;
+  gap: 8px;
 }
 
 .word-editor input {
   flex: 1;
-  min-width: 150px;
+  min-width: 0;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 13.5px;
+  border-radius: 9px;
+  padding: 10px 12px;
+  font-size: 15px;
   outline: none;
 }
 
@@ -955,8 +959,102 @@ kbd {
   border-color: rgba(255, 225, 74, 0.6);
 }
 
-.word-editor .hint {
-  flex: none;
+.word-editor > .hint {
+  margin-top: -4px;
+}
+
+.word-times {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+}
+
+.word-times .muted {
+  color: var(--muted);
+}
+
+.segmented {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+}
+
+.segment {
+  flex: 1;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 4px;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+
+.segment.is-active {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.nudge-grid {
+  display: grid;
+  grid-template-columns: 76px 1fr 1fr 64px;
+  gap: 6px;
+  align-items: center;
+}
+
+.nudge-grid .btn {
+  justify-content: center;
+  padding: 9px 6px;
+  font-size: 12.5px;
+  min-height: 40px;
+}
+
+.nudge-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.swatches {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  padding: 0;
+  cursor: pointer;
+}
+
+.swatch.is-active {
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--bg) inset;
+}
+
+.swatch-custom {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: var(--surface-2);
+  font-weight: 700;
+}
+
+.swatch-custom input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .legend {

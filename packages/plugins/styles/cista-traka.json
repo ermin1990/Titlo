@@ -39,19 +39,19 @@
     "lineIn": [
       {
         "type": "fade",
-        "durationMs": 160
+        "durationMs": 200
       }
     ],
     "wordIn": [
       {
         "type": "fade",
-        "durationMs": 100
+        "durationMs": 160
       }
     ],
     "lineOut": [
       {
         "type": "fade",
-        "durationMs": 140
+        "durationMs": 180
       }
     ]
   }

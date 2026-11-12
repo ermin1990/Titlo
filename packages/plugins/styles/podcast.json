@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "id": "titlo/podcast",
+  "name": {
+    "bs": "Podcast",
+    "en": "Podcast"
+  },
+  "author": "titlo",
+  "license": "MIT",
+  "font": {
+    "family": "Inter",
+    "weight": 600,
+    "size": 0.044
+  },
+  "layout": {
+    "maxLines": 2,
+    "maxWordsOnScreen": 8,
+    "align": "center",
+    "lineHeight": 1.24
+  },
+  "text": {
+    "fill": "#F4F3EE",
+    "uppercase": false,
+    "background": {
+      "color": "#101012",
+      "opacity": 0.62,
+      "paddingX": 0.6,
+      "paddingY": 0.28,
+      "radius": 0.4
+    }
+  },
+  "activeWord": {
+    "fill": "#7CB8FF",
+    "scale": 1.0
+  },
+  "futureWord": {
+    "opacity": 0.38
+  },
+  "animations": {
+    "lineIn": [
+      {
+        "type": "fade",
+        "durationMs": 240
+      }
+    ],
+    "wordIn": [
+      {
+        "type": "fade",
+        "durationMs": 200,
+        "from": 0.38
+      }
+    ],
+    "lineOut": [
+      {
+        "type": "fade",
+        "durationMs": 220
+      }
+    ]
+  }
+}

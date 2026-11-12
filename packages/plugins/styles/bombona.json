@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "id": "titlo/bombona",
+  "name": {
+    "bs": "Bombona",
+    "en": "Candy"
+  },
+  "author": "titlo",
+  "license": "MIT",
+  "font": {
+    "family": "Space Grotesk",
+    "weight": 700,
+    "size": 0.064
+  },
+  "layout": {
+    "maxLines": 2,
+    "maxWordsOnScreen": 4,
+    "align": "center",
+    "lineHeight": 1.14
+  },
+  "text": {
+    "fill": "#FFFFFF",
+    "stroke": "#2A1450",
+    "strokeWidth": 0.1,
+    "uppercase": true
+  },
+  "activeWord": {
+    "fill": "#FF7AC6",
+    "scale": 1.05,
+    "stroke": "#2A1450"
+  },
+  "futureWord": {
+    "opacity": 0.6
+  },
+  "animations": {
+    "lineIn": [
+      {
+        "type": "fade",
+        "durationMs": 200
+      },
+      {
+        "type": "scale",
+        "durationMs": 260,
+        "from": 1.06,
+        "easing": "easeOut"
+      }
+    ],
+    "wordIn": [
+      {
+        "type": "pop",
+        "durationMs": 220,
+        "from": 0.86,
+        "easing": "easeOut"
+      }
+    ],
+    "lineOut": [
+      {
+        "type": "fade",
+        "durationMs": 180
+      }
+    ]
+  }
+}

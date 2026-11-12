@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "titlo/meki",
+  "name": {
+    "bs": "Meki",
+    "en": "Soft"
+  },
+  "author": "titlo",
+  "license": "MIT",
+  "font": {
+    "family": "Inter",
+    "weight": 700,
+    "size": 0.052
+  },
+  "layout": {
+    "maxLines": 2,
+    "maxWordsOnScreen": 6,
+    "align": "center",
+    "lineHeight": 1.2
+  },
+  "text": {
+    "fill": "#FFFFFF",
+    "shadow": true,
+    "uppercase": false
+  },
+  "activeWord": {
+    "fill": "#FFE14A",
+    "scale": 1.0
+  },
+  "futureWord": {
+    "opacity": 0.55
+  },
+  "animations": {
+    "lineIn": [
+      {
+        "type": "fade",
+        "durationMs": 260
+      },
+      {
+        "type": "slide",
+        "durationMs": 320,
+        "dy": 0.02,
+        "easing": "easeOut"
+      }
+    ],
+    "wordIn": [
+      {
+        "type": "fade",
+        "durationMs": 220,
+        "from": 0.3
+      },
+      {
+        "type": "slide",
+        "durationMs": 260,
+        "dy": 0.008,
+        "easing": "easeOut"
+      }
+    ],
+    "lineOut": [
+      {
+        "type": "fade",
+        "durationMs": 220
+      }
+    ]
+  }
+}

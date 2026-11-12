@@ -86,12 +86,12 @@ function applyAnimation(effects: AnimationEffects, animation: Animation, elapsed
       break;
     }
     case 'pop': {
-      const from = animation.from ?? 0.7;
+      const from = animation.from ?? 0.85;
       effects.scale *= from + (1 - from) * progress;
       break;
     }
     case 'scale': {
-      const from = animation.from ?? 1.35;
+      const from = animation.from ?? 1.15;
       effects.scale *= from + (1 - from) * progress;
       break;
     }
@@ -107,11 +107,11 @@ function applyAnimation(effects: AnimationEffects, animation: Animation, elapsed
       break;
     }
     case 'blur': {
-      effects.blur = Math.max(effects.blur, (1 - progress) * 10);
+      effects.blur = Math.max(effects.blur, (1 - progress) * 6);
       break;
     }
     case 'wiggle': {
-      effects.rotate += Math.sin(progress * Math.PI * 4) * 4 * (1 - progress);
+      effects.rotate += Math.sin(progress * Math.PI * 4) * 2.5 * (1 - progress);
       break;
     }
     case 'color':
@@ -175,8 +175,11 @@ function layoutRows(
   const rows: RowLayout[] = [];
   let current: RowLayout = { words: [], width: 0 };
   let index = 0;
-  /** Malo zraka između riječi, da animacija isticanja ne spoji susjede. */
-  const gapFactor = 1.12;
+  /**
+   * Malo zraka između riječi, da animacija isticanja ne spoji susjede.
+   * Pločica iza riječi treba više mjesta.
+   */
+  const gapFactor = style.activeWord.background ? 1.9 : 1.12;
 
   for (const word of line.words) {
     if (word.source === 'spread' && word.endMs <= word.startMs) continue;

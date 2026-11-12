@@ -294,6 +294,51 @@ export function nudgeWord(
   );
 }
 
+/**
+ * Pomjera cijelu riječ (početak i kraj zajedno), trajanje ostaje isto.
+ * Zaustavlja se na susjednim riječima.
+ */
+export function shiftWord(lines: Line[], wordId: string, deltaMs: number): Line[] {
+  const out = cloneLines(lines);
+  const flat = flattenWords(out);
+  const index = flat.findIndex((entry) => entry.word.id === wordId);
+  if (index < 0) return out;
+  const word = flat[index]!.word;
+  const prev = index > 0 ? flat[index - 1]!.word : null;
+  const after = index < flat.length - 1 ? flat[index + 1]!.word : null;
+  const min = (prev ? prev.endMs : 0) - word.startMs;
+  const max = after ? after.startMs - word.endMs : Number.POSITIVE_INFINITY;
+  const delta = Math.round(Math.min(max, Math.max(min, deltaMs)));
+  word.startMs += delta;
+  word.endMs += delta;
+  word.source = 'manual';
+  return out;
+}
+
+/**
+ * Pomjera cijeli red: sve riječi istim pomakom, bez preklapanja sa
+ * susjednim redovima. Tako se lako pomjeri kad se neki tekst pojavljuje.
+ */
+export function shiftLine(lines: Line[], lineIndex: number, deltaMs: number): Line[] {
+  const out = cloneLines(lines);
+  const line = out[lineIndex];
+  const first = line?.words[0];
+  const last = line?.words[line.words.length - 1];
+  if (!line || !first || !last) return out;
+  const prevLast = out[lineIndex - 1]?.words.at(-1);
+  const nextFirst = out[lineIndex + 1]?.words[0];
+  const min = (prevLast ? prevLast.endMs : 0) - first.startMs;
+  const max = nextFirst ? nextFirst.startMs - last.endMs : Number.POSITIVE_INFINITY;
+  const delta = Math.round(Math.min(max, Math.max(min, deltaMs)));
+  if (delta === 0) return out;
+  for (const word of line.words) {
+    word.startMs += delta;
+    word.endMs += delta;
+    word.source = 'manual';
+  }
+  return out;
+}
+
 /** Globalni pomak se primjenjuje samo pri prikazu i izvozu. */
 export function displayTimes(word: Word, offsetMs: number): { startMs: number; endMs: number } {
   return { startMs: word.startMs + offsetMs, endMs: word.endMs + offsetMs };

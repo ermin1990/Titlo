@@ -1,9 +1,12 @@
 import type { Animation, Project } from '@titlo/core';
 import { STYLES, styleById } from '@titlo/plugins';
 import {
+  ACCENT_COLORS,
   LINE_PRESETS,
   OUT_PRESETS,
+  SPEED_OPTIONS,
   WORD_PRESETS,
+  accentOf,
   linePresetId,
   outPresetId,
   wordPresetId,
@@ -29,8 +32,20 @@ export default function StylePanel({ project, onChange }: Props) {
 
   const update = (patch: Partial<Project>) => onChange({ ...project, ...patch, updatedAt: Date.now() });
 
-  const setParam = (key: string, value: number | boolean) =>
+  const setParam = (key: string, value: number | boolean | string) =>
     update({ style: { ...project.style, params: { ...project.style.params, [key]: value } } });
+
+  const accent =
+    typeof project.style.params.accent === 'string' ? project.style.params.accent : accentOf(base);
+  const speed =
+    typeof project.style.params.animSpeed === 'number' ? project.style.params.animSpeed : 1;
+
+  const chooseStyle = (id: string) => {
+    // Boja istaknute riječi pripada stilu, pa je novi stil donosi svoju.
+    const { accent: _accent, ...rest } = project.style.params;
+    void _accent;
+    update({ style: { id, params: rest } });
+  };
 
   const setAnimation = (
     key: 'wordIn' | 'lineIn' | 'lineOut',
@@ -64,7 +79,7 @@ export default function StylePanel({ project, onChange }: Props) {
               key={style.id}
               type="button"
               className={`style-card ${style.id === project.style.id ? 'is-active' : ''}`}
-              onClick={() => update({ style: { id: style.id, params: project.style.params } })}
+              onClick={() => chooseStyle(style.id)}
             >
               <span
                 className="aa"
@@ -74,9 +89,69 @@ export default function StylePanel({ project, onChange }: Props) {
                   textTransform: style.text.uppercase ? 'uppercase' : 'none',
                 }}
               >
-                Aa
+                A
+                <span
+                  style={
+                    style.activeWord.background
+                      ? {
+                          background: style.activeWord.background.color,
+                          color: style.activeWord.fill,
+                          borderRadius: 4,
+                          padding: '0 3px',
+                        }
+                      : { color: style.activeWord.fill }
+                  }
+                >
+                  a
+                </span>
               </span>
               {style.name.bs ?? style.id}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="field">
+        <span className="label">
+          Boja istaknute riječi
+          <span className="value">{accent.toUpperCase()}</span>
+        </span>
+        <div className="swatches" role="group" aria-label="Boja istaknute riječi">
+          {ACCENT_COLORS.map((color) => (
+            <button
+              key={color}
+              type="button"
+              className={`swatch ${accent.toUpperCase() === color ? 'is-active' : ''}`}
+              style={{ background: color }}
+              aria-label={color}
+              onClick={() => setParam('accent', color)}
+            />
+          ))}
+          <label className="swatch swatch-custom" title="Druga boja">
+            +
+            <input
+              type="color"
+              value={accent}
+              onChange={(event) => setParam('accent', event.target.value.toUpperCase())}
+            />
+          </label>
+        </div>
+      </div>
+
+      <div className="field">
+        <span className="label">
+          Brzina animacije
+          <span className="value">sporije izgleda mekše</span>
+        </span>
+        <div className="segmented" role="group" aria-label="Brzina animacije">
+          {SPEED_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`segment ${speed === option.value ? 'is-active' : ''}`}
+              onClick={() => setParam('animSpeed', option.value)}
+            >
+              {option.label}
             </button>
           ))}
         </div>

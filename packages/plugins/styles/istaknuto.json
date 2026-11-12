@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "id": "titlo/istaknuto",
+  "name": {
+    "bs": "Istaknuto",
+    "en": "Highlight"
+  },
+  "author": "titlo",
+  "license": "MIT",
+  "font": {
+    "family": "Inter",
+    "weight": 800,
+    "size": 0.056
+  },
+  "layout": {
+    "maxLines": 2,
+    "maxWordsOnScreen": 5,
+    "align": "center",
+    "lineHeight": 1.3
+  },
+  "text": {
+    "fill": "#FFFFFF",
+    "stroke": "#000000",
+    "strokeWidth": 0.06,
+    "uppercase": true
+  },
+  "activeWord": {
+    "fill": "#101012",
+    "stroke": "#FFE14A",
+    "scale": 1.0,
+    "background": {
+      "color": "#FFE14A",
+      "opacity": 1,
+      "paddingX": 0.14,
+      "paddingY": 0.08,
+      "radius": 0.22
+    }
+  },
+  "futureWord": {
+    "opacity": 0.8
+  },
+  "animations": {
+    "lineIn": [
+      {
+        "type": "fade",
+        "durationMs": 180
+      }
+    ],
+    "wordIn": [
+      {
+        "type": "pop",
+        "durationMs": 180,
+        "from": 0.92,
+        "easing": "easeOut"
+      }
+    ],
+    "lineOut": [
+      {
+        "type": "fade",
+        "durationMs": 160
+      }
+    ]
+  }
+}
