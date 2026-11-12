@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "titlo/cista-traka",
+  "name": {
+    "bs": "Čista traka",
+    "en": "Clean bar"
+  },
+  "author": "titlo",
+  "license": "MIT",
+  "font": {
+    "family": "Inter",
+    "weight": 600,
+    "size": 0.046
+  },
+  "layout": {
+    "maxLines": 2,
+    "maxWordsOnScreen": 6,
+    "align": "center",
+    "lineHeight": 1.3
+  },
+  "text": {
+    "fill": "#F4F3EE",
+    "background": {
+      "color": "#101012",
+      "opacity": 0.72,
+      "paddingX": 0.5,
+      "paddingY": 0.22,
+      "radius": 0.34
+    }
+  },
+  "activeWord": {
+    "fill": "#FFE14A",
+    "scale": 1.0
+  },
+  "futureWord": {
+    "opacity": 0.85
+  },
+  "animations": {
+    "lineIn": [
+      {
+        "type": "fade",
+        "durationMs": 160
+      }
+    ],
+    "wordIn": [
+      {
+        "type": "fade",
+        "durationMs": 100
+      }
+    ],
+    "lineOut": [
+      {
+        "type": "fade",
+        "durationMs": 140
+      }
+    ]
+  }
+}

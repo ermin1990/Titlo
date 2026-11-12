@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "id": "titlo/kinematograf",
+  "name": {
+    "bs": "Kinematograf",
+    "en": "Cinema"
+  },
+  "author": "titlo",
+  "license": "MIT",
+  "font": {
+    "family": "Inter",
+    "weight": 400,
+    "size": 0.042,
+    "letterSpacing": 0.02
+  },
+  "layout": {
+    "maxLines": 2,
+    "maxWordsOnScreen": 8,
+    "align": "center",
+    "lineHeight": 1.4
+  },
+  "text": {
+    "fill": "#F4F3EE",
+    "shadow": true
+  },
+  "activeWord": {
+    "fill": "#F4F3EE",
+    "scale": 1.0
+  },
+  "futureWord": {
+    "opacity": 0.9
+  },
+  "animations": {
+    "lineIn": [
+      {
+        "type": "fade",
+        "durationMs": 260
+      }
+    ],
+    "wordIn": [
+      {
+        "type": "fade",
+        "durationMs": 200
+      }
+    ],
+    "lineOut": [
+      {
+        "type": "fade",
+        "durationMs": 240
+      }
+    ]
+  }
+}

@@ -1,0 +1,372 @@
+import { useMemo, useRef, useState } from 'react';
+import {
+  autoTimeWords,
+  linesFromTranscriptText,
+  parseCaptions,
+  splitLines,
+  splitWords,
+  textStats,
+  transcriptText,
+} from '@titlo/core';
+import { useApp } from '../store.js';
+import { analyzeSpeech, type AnalyzeProgress } from '../lib/analyze.js';
+import { extractAudio16k } from '../lib/audio.js';
+import { ASR_MODELS, transcribeAudio, type AsrProgress } from '../asr/index.js';
+import { formatTimecode } from '../lib/format.js';
+
+const LANGUAGES = [
+  { code: 'bs', label: 'Bosanski' },
+  { code: 'hr', label: 'Hrvatski' },
+  { code: 'sr', label: 'Srpski' },
+  { code: 'en', label: 'Engleski' },
+  { code: 'auto', label: 'Prepoznaj sam' },
+];
+
+export default function TextScreen() {
+  const text = useApp((state) => state.text);
+  const setText = useApp((state) => state.setText);
+  const language = useApp((state) => state.language);
+  const setLanguage = useApp((state) => state.setLanguage);
+  const media = useApp((state) => state.media);
+  const fileName = useApp((state) => state.fileName);
+  const videoUrl = useApp((state) => state.videoUrl);
+  const beginProject = useApp((state) => state.beginProject);
+  const setProject = useApp((state) => state.setProject);
+  const setStep = useApp((state) => state.setStep);
+  const showToast = useApp((state) => state.showToast);
+
+  const [progress, setProgress] = useState<AnalyzeProgress | null>(null);
+  const [asr, setAsr] = useState<AsrProgress | null>(null);
+  const [model, setModel] = useState(ASR_MODELS[2]!.id);
+  const [confirmReplace, setConfirmReplace] = useState(false);
+  const captionInput = useRef<HTMLInputElement>(null);
+
+  const busy = progress !== null || asr !== null;
+  const stats = useMemo(() => textStats(text), [text]);
+  const lines = useMemo(() => splitLines(text), [text]);
+  const selectedModel = ASR_MODELS.find((entry) => entry.id === model) ?? ASR_MODELS[2]!;
+
+  function startTapping() {
+    if (stats.words === 0) return;
+    useApp.getState().startTappingAt(0, 'text');
+    beginProject();
+    setStep('tap');
+  }
+
+  async function recognizeSpeech() {
+    if (!useApp.getState().videoFile) {
+      showToast('Video nije učitan. Vrati se i izaberi fajl.');
+      return;
+    }
+    if (useApp.getState().text.trim().length > 0 && !confirmReplace) {
+      setConfirmReplace(true);
+      return;
+    }
+    setConfirmReplace(false);
+
+    setAsr({ phase: 'load', percent: 0, label: 'Pripremam zvuk…' });
+    try {
+      const file = useApp.getState().videoFile;
+      if (!file) return;
+      const audio = await extractAudio16k(file);
+      const result = await transcribeAudio(
+        audio,
+        { model, language: language === 'auto' ? undefined : language },
+        setAsr,
+      );
+      if (import.meta.env.DEV) console.debug('whisper chunks', result.chunks);
+
+      const recognized = linesFromTranscriptText(result.text, result.chunks);
+      if (recognized.length === 0) {
+        throw new Error('Nisam prepoznao govor. Probaj drugi model ili tapkanje.');
+      }
+
+      setText(transcriptText(recognized));
+      beginProject();
+      const project = useApp.getState().project;
+      if (project) setProject({ ...project, lines: recognized });
+      setStep('edit');
+      showToast(
+        `Prepoznato ${recognized.length} redova. Provjeri imena, sleng i dijakritike.`,
+      );
+    } catch (error) {
+      showToast(
+        error instanceof Error
+          ? error.message
+          : 'Prepoznavanje nije uspjelo. Tapkanje uvijek radi.',
+      );
+    } finally {
+      setAsr(null);
+    }
+  }
+
+  async function startAuto() {
+    if (stats.words === 0) return;
+    const file = useApp.getState().videoFile;
+    if (!file) {
+      showToast('Video nije učitan. Vrati se i izaberi fajl.');
+      return;
+    }
+    setProgress({ value: 0, label: 'Pripremam…' });
+    try {
+      const regions = await analyzeSpeech(file, setProgress);
+      beginProject();
+      const project = useApp.getState().project;
+      if (!project) return;
+      if (regions.length === 0) {
+        showToast('Nisam našao govor. Tapkanje je sigurnije za ovaj snimak.');
+        setProgress(null);
+        return;
+      }
+      setProject({ ...project, lines: autoTimeWords(project.lines, regions) });
+      setStep('edit');
+      showToast(`Predlog spreman: ${regions.length} govornih dijelova. Provjeri i popravi.`);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Analiza nije uspjela.');
+    } finally {
+      setProgress(null);
+    }
+  }
+
+  async function importCaptions(file: File | undefined) {
+    if (!file) return;
+    const raw = await file.text();
+    const parsed = parseCaptions(raw, file.name);
+    if (parsed.length === 0) {
+      showToast('U fajlu nisam našao titlove.');
+      return;
+    }
+    beginProject();
+    const project = useApp.getState().project;
+    if (!project) return;
+    setProject({ ...project, lines: parsed });
+    setStep('edit');
+    showToast(`Uvezeno ${parsed.length} redova iz ${file.name}.`);
+  }
+
+  const ratio = media ? `${media.width}×${media.height}` : '';
+  const orientation =
+    media && media.width && media.height
+      ? media.width > media.height
+        ? 'položen'
+        : 'uspravan'
+      : '';
+
+  return (
+    <main className="shell shell-narrow">
+      <div className="text-screen">
+        <div className="video-card">
+          <div className="video-thumb">
+            {videoUrl ? <video src={videoUrl} muted playsInline preload="metadata" /> : 'video'}
+          </div>
+          <div className="video-meta">
+            <strong>{fileName ?? 'video.mp4'}</strong>
+            <span>
+              {media ? formatTimecode(media.durationMs) : '0:00.0'} · {ratio} {orientation} ·{' '}
+              {media?.hasAudio ? 'ima zvuk' : 'bez zvuka'}
+            </span>
+          </div>
+        </div>
+
+        <section className="recognize-card">
+          <div className="recognize-head">
+            <div>
+              <strong>Prepoznaj govor</strong>
+              <span className="hint">
+                Whisper napiše tekst i vremena riječi. Radi na uređaju; model se skida jednom i
+                ostaje u kešu.
+              </span>
+            </div>
+            <button
+              className="btn btn-primary btn-lg"
+              type="button"
+              onClick={() => void recognizeSpeech()}
+              disabled={busy}
+            >
+              {asr
+                ? 'Radim…'
+                : stats.words > 0
+                  ? 'Prepoznaj i zamijeni tekst'
+                  : 'Prepoznaj i napiši tekst'}
+            </button>
+          </div>
+
+          {confirmReplace && (
+            <div className="confirm-row">
+              <span>
+                Prepoznavanje će zamijeniti postojeći tekst. Vremena i stil ostaju u projektu.
+              </span>
+              <div className="actions">
+                <button className="btn" type="button" onClick={() => setConfirmReplace(false)}>
+                  Otkaži
+                </button>
+                <button className="btn btn-primary" type="button" onClick={() => void recognizeSpeech()}>
+                  Zamijeni tekst
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="recognize-controls">
+            <label className="field-inline">
+              <span>Jezik govora</span>
+              <select
+                className="select"
+                value={language}
+                onChange={(event) => setLanguage(event.target.value)}
+                disabled={busy}
+              >
+                {LANGUAGES.map((entry) => (
+                  <option key={entry.code} value={entry.code}>
+                    {entry.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="field-inline">
+              <span>Model</span>
+              <select
+                className="select"
+                value={model}
+                onChange={(event) => setModel(event.target.value)}
+                disabled={busy}
+              >
+                {ASR_MODELS.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    {entry.label} ({entry.size})
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <span className="hint recognize-note">
+              {selectedModel.note}. Za bosanski probaj i Hrvatski — često bolje pogodi.
+            </span>
+          </div>
+
+          {asr && (
+            <div className="field">
+              <span className="label">
+                {asr.label}
+                <span className="value">{asr.phase === 'transcribe' ? '' : `${Math.round(asr.percent)} %`}</span>
+              </span>
+              <div className="progress-track">
+                <div
+                  className="progress-fill"
+                  style={{
+                    width:
+                      asr.phase === 'transcribe' ? '100%' : `${Math.max(4, asr.percent)}%`,
+                  }}
+                />
+              </div>
+              <span className="hint">
+                Prvi put se model skida s interneta. Zvuk i video ne napuštaju uređaj.
+              </span>
+            </div>
+          )}
+        </section>
+
+        <div className="screen-head">
+          <div>
+            <h1>Ili zalijepi tekst koji se govori</h1>
+            <p>Svaki novi red u tekstu je jedan red titla na ekranu.</p>
+          </div>
+          <button
+            className="btn btn-ghost"
+            type="button"
+            onClick={() => captionInput.current?.click()}
+            disabled={busy}
+          >
+            Uvezi SRT
+          </button>
+          <input
+            ref={captionInput}
+            type="file"
+            accept=".srt,.vtt,text/plain"
+            hidden
+            onChange={(event) => void importCaptions(event.target.files?.[0])}
+          />
+        </div>
+
+        <div className="field">
+          <label className="label" htmlFor="caption-text">
+            Tekst
+            <span className="value">
+              {stats.lines} {stats.lines === 1 ? 'red' : 'reda'} · {stats.words} riječi
+            </span>
+          </label>
+          <textarea
+            id="caption-text"
+            className="textarea"
+            value={text}
+            spellCheck={false}
+            placeholder={'Dobro jutro, ljudi.\nDanas pravimo burek\nod nule, bez žurbe.'}
+            onChange={(event) => setText(event.target.value)}
+          />
+        </div>
+
+        {lines.length > 0 && (
+          <div className="field">
+            <span className="label">
+              Redovi
+              <span className="value">tako će izgledati na ekranu</span>
+            </span>
+            <div className="line-preview">
+              {lines.map((line, index) => (
+                <div key={`${index}-${line}`}>
+                  {index > 0 && <div className="line-divider" />}
+                  <div className="line-row" style={{ marginTop: index > 0 ? 10 : 0 }}>
+                    {splitWords(line).map((word, wordIndex) => (
+                      <span className="word-chip" key={`${word}-${wordIndex}`}>
+                        {word}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {progress && (
+          <div className="field">
+            <span className="label">
+              {progress.label}
+              <span className="value">{Math.round(progress.value * 100)} %</span>
+            </span>
+            <div className="progress-track">
+              <div className="progress-fill" style={{ width: `${progress.value * 100}%` }} />
+            </div>
+            <span className="hint">Analiza radi u browseru. Video ne izlazi s uređaja.</span>
+          </div>
+        )}
+
+        <div className="actions">
+          <button
+            className="btn btn-lg"
+            type="button"
+            onClick={() => void startAuto()}
+            disabled={busy || stats.words === 0}
+          >
+            Samo tempiraj postojeći tekst
+          </button>
+          <button
+            className="btn btn-primary btn-lg"
+            type="button"
+            onClick={startTapping}
+            disabled={busy || stats.words === 0}
+          >
+            Kreni s tapkanjem
+          </button>
+          <div className="spacer" />
+          {stats.words === 0 && <span className="hint">Upiši tekst ili ga prepoznaj.</span>}
+        </div>
+
+        <p className="hint">
+          Bez interneta? Tapkanje i ručno uređivanje rade uvijek. Automatika je pomoć, nikad uslov.
+        </p>
+      </div>
+    </main>
+  );
+}

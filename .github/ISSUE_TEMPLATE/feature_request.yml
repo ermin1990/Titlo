@@ -1,0 +1,29 @@
+name: Prijedlog
+description: Nova funkcija ili poboljšanje
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Koji problem rješavaš
+      description: Opis situacije, ne rješenja.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Predlog rješenja
+  - type: dropdown
+    id: area
+    attributes:
+      label: Dio aplikacije
+      options:
+        - Tapkanje
+        - Automatika
+        - Editor
+        - Stilovi i animacije
+        - Filteri
+        - Izvoz
+        - Pristupačnost
+        - Pluginovi i zajednica
+        - Drugo

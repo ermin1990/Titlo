@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "id": "titlo/neon-noc",
+  "name": {
+    "bs": "Neon noć",
+    "en": "Neon night"
+  },
+  "author": "titlo",
+  "license": "MIT",
+  "font": {
+    "family": "Space Grotesk",
+    "weight": 700,
+    "size": 0.068
+  },
+  "layout": {
+    "maxLines": 2,
+    "maxWordsOnScreen": 4,
+    "align": "center",
+    "lineHeight": 1.18
+  },
+  "text": {
+    "fill": "#F4F3EE",
+    "stroke": "#7CB8FF",
+    "strokeWidth": 0.05,
+    "uppercase": true
+  },
+  "activeWord": {
+    "fill": "#FFE14A",
+    "scale": 1.04,
+    "stroke": "#FFE14A"
+  },
+  "futureWord": {
+    "opacity": 0.5
+  },
+  "animations": {
+    "lineIn": [
+      {
+        "type": "blur",
+        "durationMs": 220
+      }
+    ],
+    "wordIn": [
+      {
+        "type": "pop",
+        "durationMs": 180,
+        "easing": "backOut"
+      }
+    ],
+    "lineOut": [
+      {
+        "type": "blur",
+        "durationMs": 160
+      }
+    ]
+  }
+}

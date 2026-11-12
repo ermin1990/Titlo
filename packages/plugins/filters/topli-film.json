@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "titlo/topli-film",
+  "name": { "bs": "Topli film", "en": "Warm film" },
+  "author": "titlo",
+  "license": "MIT",
+  "flashing": false,
+  "params": [
+    { "key": "intensity", "type": "float", "min": 0, "max": 1, "default": 0.7 },
+    { "key": "grain", "type": "float", "min": 0, "max": 1, "default": 0.3 }
+  ],
+  "webPreview": { "css": "sepia(0.35) saturate(1.15) contrast(1.05) brightness(1.03)" }
+}

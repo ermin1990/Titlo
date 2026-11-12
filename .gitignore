@@ -1,0 +1,23 @@
+node_modules/
+dist/
+coverage/
+.DS_Store
+*.log
+.env
+.env.local
+apps/web/public/samples/
+apps/web/public/test-*.mp4
+
+# Capacitor generisani fajlovi (kopiraju se iz dist/)
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+android/capacitor-cordova-android-plugins/
+android/.gradle/
+android/.kotlin/
+android/build/
+android/app/build/
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+ios/capacitor-cordova-ios-plugins/
+ios/App/build/

@@ -1,0 +1,58 @@
+name: Prijava greške
+description: Nešto ne radi kako treba
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Hvala za prijavu. Nemoj prilagati video sa ličnim sadržajem. Dovoljan je kratak opis i, ako možeš, projekat bez videa.
+  - type: textarea
+    id: what
+    attributes:
+      label: Šta se dešava
+      description: Kratko i konkretno.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Koraci do greške
+      placeholder: |
+        1. Uvezem video...
+        2. Zalijepim tekst...
+        3. Tapnem...
+    validations:
+      required: true
+  - type: input
+    id: expected
+    attributes:
+      label: Šta si očekivao
+  - type: dropdown
+    id: step
+    attributes:
+      label: Gdje se dešava
+      options:
+        - Uvoz videa
+        - Tekst i podjela redova
+        - Tapkanje
+        - Automatski predlog
+        - Editor i vrijeme
+        - Stil i animacije
+        - Filter
+        - Izvoz
+        - Drugo
+  - type: input
+    id: env
+    attributes:
+      label: Uređaj i browser
+      placeholder: iPhone 14 / Safari 18, ili MacBook / Chrome 131
+  - type: input
+    id: video
+    attributes:
+      label: Format videa
+      placeholder: MP4 H.264, 1080×1920, 30 fps, 11 s, sa zvukom
+  - type: textarea
+    id: sample
+    attributes:
+      label: Tekst i jezik
+      description: Ako je problem u dijakriticima, ćirilici ili RTL tekstu, zalijepi primjer.

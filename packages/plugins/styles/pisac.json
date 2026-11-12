@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "titlo/pisac",
+  "name": {
+    "bs": "Pisaća mašina",
+    "en": "Typewriter"
+  },
+  "author": "titlo",
+  "license": "MIT",
+  "font": {
+    "family": "JetBrains Mono",
+    "weight": 500,
+    "size": 0.044
+  },
+  "layout": {
+    "maxLines": 3,
+    "maxWordsOnScreen": 6,
+    "align": "left",
+    "lineHeight": 1.35
+  },
+  "text": {
+    "fill": "#F4F3EE",
+    "background": {
+      "color": "#000000",
+      "opacity": 0.55,
+      "paddingX": 0.5,
+      "paddingY": 0.2,
+      "radius": 0.2
+    }
+  },
+  "activeWord": {
+    "fill": "#FFE14A",
+    "scale": 1.0
+  },
+  "futureWord": {
+    "opacity": 0.3
+  },
+  "animations": {
+    "lineIn": [
+      {
+        "type": "fade",
+        "durationMs": 100
+      }
+    ],
+    "wordIn": [
+      {
+        "type": "typewriter",
+        "durationMs": 220,
+        "easing": "linear"
+      }
+    ],
+    "lineOut": [
+      {
+        "type": "fade",
+        "durationMs": 120
+      }
+    ]
+  }
+}

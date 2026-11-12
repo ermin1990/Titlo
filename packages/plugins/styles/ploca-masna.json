@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "titlo/ploca-masna",
+  "name": {
+    "bs": "Ploča masna",
+    "en": "Fat plate"
+  },
+  "author": "titlo",
+  "license": "MIT",
+  "font": {
+    "family": "Space Grotesk",
+    "weight": 700,
+    "size": 0.078,
+    "letterSpacing": -0.01
+  },
+  "layout": {
+    "maxLines": 2,
+    "maxWordsOnScreen": 3,
+    "align": "center",
+    "lineHeight": 1.08
+  },
+  "text": {
+    "fill": "#F4F3EE",
+    "stroke": "#101012",
+    "strokeWidth": 0.1,
+    "uppercase": true
+  },
+  "activeWord": {
+    "fill": "#FFE14A",
+    "scale": 1.02
+  },
+  "futureWord": {
+    "opacity": 0.6
+  },
+  "animations": {
+    "lineIn": [
+      {
+        "type": "slide",
+        "durationMs": 220,
+        "dy": -0.06,
+        "easing": "backOut"
+      }
+    ],
+    "wordIn": [
+      {
+        "type": "slide",
+        "durationMs": 180,
+        "dy": -0.022,
+        "easing": "backOut"
+      }
+    ],
+    "lineOut": [
+      {
+        "type": "fade",
+        "durationMs": 80
+      }
+    ]
+  }
+}

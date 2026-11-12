@@ -1,0 +1,32 @@
+{
+  "name": "titlo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Animirani titlovi i filteri za kratke videe — sve na uređaju.",
+  "license": "MPL-2.0",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "pnpm --filter @titlo/web dev",
+    "build": "pnpm --filter @titlo/web build",
+    "build:mobile": "pnpm build && cap sync",
+    "android": "pnpm build && cap sync android && cap open android",
+    "ios": "pnpm build && cap sync ios && cap open ios",
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^4.0.0",
+    "@capacitor/cli": "^8.6.0"
+  },
+  "dependencies": {
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/share": "^8.0.3",
+    "@capacitor/status-bar": "^8.0.4"
+  }
+}

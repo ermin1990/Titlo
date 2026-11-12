@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "titlo/hladni-film",
+  "name": { "bs": "Hladni film", "en": "Cold film" },
+  "author": "titlo",
+  "license": "MIT",
+  "flashing": false,
+  "params": [{ "key": "intensity", "type": "float", "min": 0, "max": 1, "default": 0.7 }],
+  "webPreview": { "css": "saturate(0.9) hue-rotate(-12deg) contrast(1.06) brightness(0.98)" }
+}

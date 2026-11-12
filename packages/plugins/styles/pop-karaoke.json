@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "id": "titlo/pop-karaoke",
+  "name": {
+    "bs": "Pop karaoke",
+    "en": "Pop karaoke"
+  },
+  "author": "titlo",
+  "license": "MIT",
+  "font": {
+    "family": "Inter",
+    "weight": 800,
+    "size": 0.062
+  },
+  "layout": {
+    "maxLines": 2,
+    "maxWordsOnScreen": 5,
+    "align": "center",
+    "lineHeight": 1.16
+  },
+  "text": {
+    "fill": "#FFFFFF",
+    "stroke": "#000000",
+    "strokeWidth": 0.08,
+    "uppercase": true
+  },
+  "activeWord": {
+    "fill": "#FFE14A",
+    "scale": 1.04
+  },
+  "futureWord": {
+    "opacity": 0.72
+  },
+  "animations": {
+    "lineIn": [
+      {
+        "type": "fade",
+        "durationMs": 120
+      }
+    ],
+    "wordIn": [
+      {
+        "type": "pop",
+        "durationMs": 140,
+        "easing": "backOut"
+      }
+    ],
+    "lineOut": [
+      {
+        "type": "fade",
+        "durationMs": 100
+      }
+    ]
+  }
+}
