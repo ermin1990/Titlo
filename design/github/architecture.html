@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="frame arch">
+    <div class="head">
+      <div>
+        <div class="eyebrow">architecture</div>
+        <h1>One core. Three shells.</h1>
+      </div>
+      <p class="hint">
+        All caption logic lives in a platform-agnostic TypeScript package. The apps only draw and
+        pass input.
+      </p>
+    </div>
+
+    <div class="diagram">
+      <div class="box">
+        <div class="label">packages/core</div>
+        <h3>The caption engine</h3>
+        <ul>
+          <li>Project model · integer ms · 0..1 fractions</li>
+          <li>Tap timing, spread, manual clamps</li>
+          <li>Text segmentation and transcript alignment</li>
+          <li>Caption layout and animation</li>
+          <li>SRT · VTT · LRC · portable JSON</li>
+        </ul>
+      </div>
+
+      <div class="arrow">→</div>
+
+      <div class="middle">
+        <div class="shell"><strong>Web / PWA</strong><span>apps/web</span></div>
+        <div class="shell"><strong>Android</strong><span>capacitor</span></div>
+        <div class="shell"><strong>iOS</strong><span>capacitor</span></div>
+      </div>
+
+      <div class="arrow">←</div>
+
+      <div class="engines">
+        <div class="engine">
+          <div class="label">speech</div>
+          <h4>Whisper on-device</h4>
+          <p>Transformers.js in a worker, WebGPU with WASM fallback. Word timestamps aligned to the text.</p>
+        </div>
+        <div class="engine">
+          <div class="label">export</div>
+          <h4>MP4, frame by frame</h4>
+          <p>WebCodecs decode → same renderer → H.264 encode, audio passed through, muxed in the browser.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <span>core imports no React, Skia or DOM APIs</span>
+      <span>styles and filters are data, never code</span>
+      <span>MPL-2.0 · MIT plugins</span>
+    </div>
+  </body>
+</html>

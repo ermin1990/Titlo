@@ -10,6 +10,8 @@ Paste your text, tap along with the video, fix a word if it is wrong, and export
 captions burned in. Speech recognition is optional and runs locally. **No server, no account, no
 upload.**
 
+![Titlo — captions that land on the word](docs/images/hero.png)
+
 > Status: working prototype. The web app, the word-by-word editor, the plugin styles, speech
 > recognition and MP4 export are implemented. The Android and iOS shells build; real-device testing
 > and a release build are still ahead.
@@ -153,6 +155,8 @@ video file
           (canvas / Skia)             (WebCodecs + muxer)
 ```
 
+![How it works: paste, tap, export](docs/images/how.png)
+
 - All timing logic lives in `packages/core`, a platform-agnostic TypeScript package. It imports
   nothing from React, Skia or the DOM.
 - Time is always the video position, never the system clock. Slowing playback or stalling cannot
@@ -161,6 +165,8 @@ video file
   offset do not change word times.
 - Positions and sizes are fractions from 0 to 1, never pixels.
 - The caption renderer is deterministic: same inputs, same frame, on every platform.
+
+![Architecture: one core, three shells](docs/images/architecture.png)
 
 More detail: [docs/architecture.md](docs/architecture.md).
 
