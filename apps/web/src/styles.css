@@ -401,6 +401,36 @@ h3 {
   font-size: 12px;
 }
 
+.install-hint {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(124, 184, 255, 0.35);
+  border-radius: 14px;
+  background: linear-gradient(90deg, rgba(124, 184, 255, 0.08), transparent 75%);
+}
+
+.install-hint strong {
+  display: block;
+  margin: 4px 0 8px;
+  font-size: 15px;
+}
+
+.install-hint ol {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.install-hint b {
+  color: var(--text);
+}
+
 .resume-card {
   display: flex;
   align-items: center;
@@ -963,6 +993,26 @@ kbd {
   margin-top: -4px;
 }
 
+.word-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 6px;
+}
+
+.word-actions .btn {
+  justify-content: center;
+  min-height: 40px;
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-danger {
+  color: var(--danger);
+  border-color: rgba(255, 122, 122, 0.35);
+}
+
 .word-times {
   display: flex;
   justify-content: space-between;
@@ -1210,11 +1260,13 @@ kbd {
 
 .nudge-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   align-items: center;
 }
 
 .nudge-row .btn {
+  white-space: nowrap;
   padding: 4px 8px;
   font-size: 11px;
   font-family: var(--mono);

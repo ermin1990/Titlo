@@ -5,6 +5,12 @@ export interface AsrModel {
   label: string;
   size: string;
   note: string;
+  /**
+   * Verzija modela u aplikaciji. Skinuti model ostaje na uređaju kroz sva
+   * ažuriranja aplikacije; povećaj ovaj broj samo kad model treba ponovo
+   * skinuti (npr. novi kvantizirani fajlovi), pa se stari obriše.
+   */
+  version: number;
 }
 
 export const ASR_MODELS: AsrModel[] = [
@@ -13,18 +19,21 @@ export const ASR_MODELS: AsrModel[] = [
     label: 'Najbrži',
     size: '~40 MB',
     note: 'Najmanja tačnost, dobar samo za brzi test',
+    version: 1,
   },
   {
     id: 'onnx-community/whisper-base_timestamped',
     label: 'Brži',
     size: '~80–150 MB',
     note: 'Ravnoteža brzine i tačnosti',
+    version: 1,
   },
   {
     id: 'onnx-community/whisper-small_timestamped',
     label: 'Preporučeno',
     size: '~250–500 MB',
     note: 'Najbolje za imena, sleng i naše dijalekte',
+    version: 1,
   },
 ];
 

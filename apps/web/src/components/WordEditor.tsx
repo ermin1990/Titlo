@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   flattenWords,
+  deleteWord,
+  mergeWithNext,
   setWordText,
   setWordTimes,
   shiftLine,
@@ -79,6 +81,26 @@ export default function WordEditor({ project, word, timeMs, onChange, onSeek, on
   const duration = word.endMs - word.startMs;
   const multiple = wordsOf(draft).length > 1;
 
+  const flat = flattenWords(project.lines);
+  const flatIndex = flat.findIndex((entry) => entry.word.id === word.id);
+  const nextWord = flat[flatIndex + 1]?.word ?? null;
+
+  /** Ostale riječi ostaju gdje jesu; izbor prelazi na susjednu riječ. */
+  const remove = () => {
+    const neighbour = flat[flatIndex + 1]?.word ?? flat[flatIndex - 1]?.word ?? null;
+    commitLines(deleteWord(project.lines, word.id));
+    onSelectWord(neighbour?.id ?? null);
+  };
+
+  /** "N" + "amjenjena" = "Namjenjena", bez pomjeranja ostalih riječi. */
+  const mergeNext = () => {
+    if (!nextWord) return;
+    const merged = `${word.text}${nextWord.text}`;
+    commitLines(mergeWithNext(project.lines, word.id));
+    setDraft(merged);
+    original.current = merged;
+  };
+
   return (
     <div className="word-editor">
       <div className="word-editor-text">
@@ -123,6 +145,21 @@ export default function WordEditor({ project, word, timeMs, onChange, onSeek, on
           ? 'Više riječi: podijelit će vrijeme kad završiš kucanje.'
           : 'Čuva se dok kucaš.'}
       </span>
+
+      <div className="word-actions">
+        <button
+          className="btn"
+          type="button"
+          disabled={!nextWord}
+          onClick={mergeNext}
+          title="Spoji ovu riječ sa sljedećom, bez razmaka"
+        >
+          Spoji sa „{nextWord ? nextWord.text : '…'}”
+        </button>
+        <button className="btn btn-danger" type="button" onClick={remove}>
+          Obriši riječ
+        </button>
+      </div>
 
       <div className="word-times">
         <span>

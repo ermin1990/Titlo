@@ -12,6 +12,8 @@ import {
   retimeForNewText,
   setWordText,
   setWordTimes,
+  deleteWord,
+  mergeWithNext,
   shiftLine,
   shiftWord,
   normalizeText,
@@ -272,6 +274,52 @@ describe('pomjeranje riječi i redova', () => {
     expect(earlier[1]!.words[0]!.startMs).toBe(1800);
     expect(earlier[1]!.words[1]!.endMs).toBe(2700);
     expect(lines[1]!.words[0]!.startMs).toBe(3000);
+  });
+});
+
+describe('brisanje i spajanje riječi', () => {
+  const timed = () => {
+    const lines = buildLines('Ovo je N amjenjena\nriječ');
+    lines
+      .flatMap((line) => line.words)
+      .forEach((word, index) => {
+        word.startMs = 1000 + index * 300;
+        word.endMs = 1250 + index * 300;
+        word.source = 'auto';
+      });
+    return lines;
+  };
+
+  it('briše riječ, a ostale ne pomjera', () => {
+    const lines = timed();
+    const out = deleteWord(lines, lines[0]!.words[2]!.id);
+    expect(out[0]!.words.map((word) => word.text)).toEqual(['Ovo', 'je', 'amjenjena']);
+    expect(out[0]!.words.map((word) => word.startMs)).toEqual([1000, 1300, 1900]);
+    expect(out[1]!.words[0]!.startMs).toBe(2200);
+  });
+
+  it('briše prazan red', () => {
+    const lines = timed();
+    const out = deleteWord(lines, lines[1]!.words[0]!.id);
+    expect(out.length).toBe(1);
+  });
+
+  it('spaja slovo sa sljedećom riječi bez razmaka', () => {
+    const lines = timed();
+    const out = mergeWithNext(lines, lines[0]!.words[2]!.id);
+    const merged = out[0]!.words[2]!;
+    expect(out[0]!.words.map((word) => word.text)).toEqual(['Ovo', 'je', 'Namjenjena']);
+    expect(merged.startMs).toBe(1600);
+    expect(merged.endMs).toBe(2150);
+    expect(out[0]!.words[1]!.endMs).toBe(1550);
+    expect(out[1]!.words[0]!.startMs).toBe(2200);
+  });
+
+  it('spaja zadnju riječ reda s prvom riječi sljedećeg reda', () => {
+    const lines = timed();
+    const out = mergeWithNext(lines, lines[0]!.words[3]!.id);
+    expect(out.length).toBe(1);
+    expect(out[0]!.words.at(-1)!.text).toBe('amjenjenariječ');
   });
 });
 

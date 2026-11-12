@@ -12,14 +12,30 @@ upload.**
 
 ![Titlo — captions that land on the word](docs/images/hero.png)
 
-> Status: working prototype. The web app, the word-by-word editor, the plugin styles, speech
-> recognition and MP4 export are implemented. The Android and iOS shells build; real-device testing
-> and a release build are still ahead.
+> Status: public Beta. The web app, the word-by-word editor, the plugin styles, speech recognition
+> and MP4 export are implemented. Store releases are still ahead.
+
+## Try the Beta
+
+**Website:** [ermin1990.github.io/Titlo](https://ermin1990.github.io/Titlo/) (English and Bosnian)
+
+| Platform | How to install |
+| --- | --- |
+| **Android** | Download [`titlo-beta.apk`](https://github.com/ermin1990/Titlo/releases/download/beta/titlo-beta.apk) on the phone, open it and allow installs from this source. |
+| **iPhone / iPad** | Open [the web app](https://ermin1990.github.io/Titlo/app/) in **Safari** → **Share** → **Add to Home Screen**. It runs full screen and works offline. |
+| **Computer** | Open [the web app](https://ermin1990.github.io/Titlo/app/) in Chrome or Edge. |
+| Google Play, App Store, TestFlight | Coming soon |
+
+Every push to `main` publishes a new Beta: the website and web app through
+[`pages.yml`](.github/workflows/pages.yml), the APK through
+[`beta-android.yml`](.github/workflows/beta-android.yml) as the `beta` pre-release. Found a bug?
+[Open an issue](https://github.com/ermin1990/Titlo/issues/new/choose).
 
 ---
 
 ## Table of contents
 
+- [Try the Beta](#try-the-beta)
 - [Why](#why)
 - [Features](#features)
 - [Quick start](#quick-start)

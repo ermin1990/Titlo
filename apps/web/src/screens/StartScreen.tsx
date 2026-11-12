@@ -3,6 +3,7 @@ import { countWords, textStats } from '@titlo/core';
 import { useApp } from '../store.js';
 import { probeVideo } from '../lib/video.js';
 import { canExportVideo } from '../lib/export-video.js';
+import InstallHint from '../components/InstallHint.js';
 
 export default function StartScreen() {
   const setVideoFile = useApp((state) => state.setVideoFile);
@@ -55,7 +56,7 @@ export default function StartScreen() {
   async function loadSample() {
     setBusy(true);
     try {
-      const response = await fetch('/sample-burek.mp4');
+      const response = await fetch(`${import.meta.env.BASE_URL}sample-burek.mp4`);
       if (!response.ok) throw new Error('Primjer nije dostupan.');
       const blob = await response.blob();
       const file = new File([blob], 'burek-od-nule.mp4', { type: 'video/mp4' });
@@ -89,6 +90,8 @@ export default function StartScreen() {
             ostaje na uređaju.
           </p>
         </div>
+
+        <InstallHint />
 
         <div className="hero-grid">
           {savedProject && (

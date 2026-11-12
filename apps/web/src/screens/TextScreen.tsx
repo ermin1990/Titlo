@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   autoTimeWords,
   linesFromTranscriptText,
@@ -12,6 +12,12 @@ import { useApp } from '../store.js';
 import { analyzeSpeech, type AnalyzeProgress } from '../lib/analyze.js';
 import { extractAudio16k } from '../lib/audio.js';
 import { ASR_MODELS, transcribeAudio, type AsrProgress } from '../asr/index.js';
+import {
+  isModelOnDevice,
+  keepModelsOnDevice,
+  markModelReady,
+  removeOutdatedModels,
+} from '../asr/cache.js';
 import { formatTimecode } from '../lib/format.js';
 
 const LANGUAGES = [
@@ -39,12 +45,31 @@ export default function TextScreen() {
   const [asr, setAsr] = useState<AsrProgress | null>(null);
   const [model, setModel] = useState(ASR_MODELS[2]!.id);
   const [confirmReplace, setConfirmReplace] = useState(false);
+  const [onDevice, setOnDevice] = useState<Record<string, boolean>>({});
   const captionInput = useRef<HTMLInputElement>(null);
 
   const busy = progress !== null || asr !== null;
   const stats = useMemo(() => textStats(text), [text]);
   const lines = useMemo(() => splitLines(text), [text]);
   const selectedModel = ASR_MODELS.find((entry) => entry.id === model) ?? ASR_MODELS[2]!;
+  const modelReady = onDevice[selectedModel.id] === true;
+
+  // Model skinut jednom ostaje na uređaju; briše se samo kad aplikacija
+  // donese novu verziju tog modela.
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      await removeOutdatedModels(ASR_MODELS).catch(() => undefined);
+      const entries = await Promise.all(
+        ASR_MODELS.map(async (entry) => [entry.id, await isModelOnDevice(entry)] as const),
+      );
+      if (active) setOnDevice(Object.fromEntries(entries));
+      if (entries.some(([, ready]) => ready)) void keepModelsOnDevice();
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function recognizeSpeech() {
     if (!useApp.getState().videoFile) {
@@ -58,6 +83,8 @@ export default function TextScreen() {
     setConfirmReplace(false);
 
     setAsr({ phase: 'load', percent: 0, label: 'Pripremam zvuk…' });
+    // Prije skidanja: zamoli browser da model ne briše kad mu treba prostor.
+    await keepModelsOnDevice();
     try {
       const file = useApp.getState().videoFile;
       if (!file) return;
@@ -68,6 +95,8 @@ export default function TextScreen() {
         setAsr,
       );
       if (import.meta.env.DEV) console.debug('whisper chunks', result.chunks);
+      markModelReady(selectedModel);
+      setOnDevice((current) => ({ ...current, [selectedModel.id]: true }));
 
       const recognized = linesFromTranscriptText(result.text, result.chunks);
       if (recognized.length === 0) {
@@ -166,8 +195,10 @@ export default function TextScreen() {
             <div>
               <strong>Prepoznaj govor</strong>
               <span className="hint">
-                Whisper napiše tekst i vremena riječi na uređaju. Model se skida jednom i ostaje u
-                kešu.
+                Whisper napiše tekst i vremena riječi na uređaju.{' '}
+                {modelReady
+                  ? 'Model je već na uređaju i radi bez interneta.'
+                  : `Model (${selectedModel.size}) se skida samo jednom i ostaje na uređaju.`}
               </span>
             </div>
             <button
@@ -225,7 +256,7 @@ export default function TextScreen() {
                 >
                   {ASR_MODELS.map((entry) => (
                     <option key={entry.id} value={entry.id}>
-                      {entry.label} ({entry.size})
+                      {entry.label} ({onDevice[entry.id] ? 'na uređaju' : entry.size})
                     </option>
                   ))}
                 </select>
@@ -253,7 +284,9 @@ export default function TextScreen() {
                 />
               </div>
               <span className="hint">
-                Prvi put se model skida s interneta. Zvuk i video ne napuštaju uređaj.
+                {modelReady
+                  ? 'Model se učitava s uređaja. Zvuk i video ne napuštaju uređaj.'
+                  : 'Model se skida samo ovaj put. Zvuk i video ne napuštaju uređaj.'}
               </span>
             </div>
           )}

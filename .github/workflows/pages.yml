@@ -1,0 +1,61 @@
+name: Web (GitHub Pages)
+
+# https://ermin1990.github.io/Titlo/      landing stranica (site/)
+# https://ermin1990.github.io/Titlo/app/  web aplikacija; na iPhoneu se
+#                                         dodaje na početni ekran iz Safarija.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Instalacija
+        run: pnpm install --frozen-lockfile
+
+      - name: Build aplikacije za Pages
+        env:
+          TITLO_BASE: /Titlo/app/
+        run: pnpm build
+
+      - name: Spoji landing i aplikaciju
+        run: |
+          mkdir -p public-site
+          cp -R site/. public-site/
+          mkdir -p public-site/app
+          cp -R apps/web/dist/. public-site/app/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public-site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

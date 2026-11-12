@@ -126,6 +126,46 @@ export function setWordText(lines: Line[], wordId: string, text: string): Line[]
   return out;
 }
 
+/**
+ * Briše jednu riječ. Ostale riječi zadržavaju svoja vremena; prazan red
+ * nestaje.
+ */
+export function deleteWord(lines: Line[], wordId: string): Line[] {
+  return lines
+    .map((line) => ({
+      ...line,
+      words: line.words.filter((word) => word.id !== wordId).map((word) => ({ ...word })),
+    }))
+    .filter((line) => line.words.length > 0);
+}
+
+/**
+ * Spaja riječ sa sljedećom bez razmaka ("N" + "amjenjena" = "Namjenjena").
+ * Nova riječ traje od početka prve do kraja druge; ostale se ne pomjeraju.
+ * Ako je sljedeća riječ u novom redu, prelazi u ovaj red.
+ */
+export function mergeWithNext(lines: Line[], wordId: string): Line[] {
+  const out = lines.map((line) => ({ ...line, words: line.words.map((word) => ({ ...word })) }));
+  const lineIndex = out.findIndex((line) => line.words.some((word) => word.id === wordId));
+  if (lineIndex < 0) return out;
+  const line = out[lineIndex]!;
+  const index = line.words.findIndex((word) => word.id === wordId);
+  const word = line.words[index]!;
+
+  const sameLine = index < line.words.length - 1;
+  const nextLine = out[lineIndex + 1];
+  const next = sameLine ? line.words[index + 1] : nextLine?.words[0];
+  if (!next) return out;
+
+  word.text = `${word.text}${next.text}`;
+  word.endMs = Math.max(word.endMs, next.endMs);
+  word.source = 'manual';
+
+  if (sameLine) line.words.splice(index + 1, 1);
+  else nextLine!.words.splice(0, 1);
+  return out.filter((entry) => entry.words.length > 0);
+}
+
 /** Spaja dva susjedna reda u jedan, zadržavajući riječi i njihova vremena. */
 export function mergeLines(lines: Line[], lineIndex: number): Line[] {
   if (lineIndex < 0 || lineIndex >= lines.length - 1) return lines;

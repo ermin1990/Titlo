@@ -1,0 +1,113 @@
+name: Beta APK (Android)
+
+# Pravi Android APK i objavljuje ga kao pre-release "beta" sa stalnim linkom:
+# https://github.com/ermin1990/Titlo/releases/download/beta/titlo-beta.apk
+#
+# Potpis: ako postoje tajne TITLO_KEYSTORE_BASE64, TITLO_KEYSTORE_PASSWORD,
+# TITLO_KEY_ALIAS i TITLO_KEY_PASSWORD, APK je potpisan istim ključem svaki
+# put, pa se nova beta instalira preko stare. Bez njih CI pravi debug APK;
+# tada novu betu treba instalirati nakon brisanja stare.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - 'android/**'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/beta-android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: beta-android
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      TITLO_VERSION_CODE: ${{ github.run_number }}
+      TITLO_VERSION_NAME: 0.1.0-beta.${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Instalacija
+        run: pnpm install --frozen-lockfile
+
+      - name: Testovi
+        run: pnpm test
+
+      - name: Web build i Capacitor sync
+        run: |
+          pnpm build
+          pnpm exec cap sync android
+
+      - name: Ključ za potpis (ako postoji)
+        id: keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.TITLO_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/titlo.jks"
+            echo "path=$RUNNER_TEMP/titlo.jks" >> "$GITHUB_OUTPUT"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Nema TITLO_KEYSTORE_BASE64, pravim debug APK."
+          fi
+
+      - name: Gradle build
+        working-directory: android
+        env:
+          TITLO_KEYSTORE_PATH: ${{ steps.keystore.outputs.path }}
+          TITLO_KEYSTORE_PASSWORD: ${{ secrets.TITLO_KEYSTORE_PASSWORD }}
+          TITLO_KEY_ALIAS: ${{ secrets.TITLO_KEY_ALIAS }}
+          TITLO_KEY_PASSWORD: ${{ secrets.TITLO_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          if [ "${{ steps.keystore.outputs.signed }}" = "true" ]; then
+            ./gradlew --no-daemon assembleRelease
+            cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/titlo-beta.apk"
+          else
+            ./gradlew --no-daemon assembleDebug
+            cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/titlo-beta.apk"
+          fi
+
+      - name: Objavi kao Beta pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete beta --cleanup-tag --yes || true
+          cat > "$RUNNER_TEMP/notes.md" <<EOF
+          Beta verzija za testiranje: **${TITLO_VERSION_NAME}** (commit ${GITHUB_SHA::7}).
+
+          **Android:** preuzmi \`titlo-beta.apk\` na telefonu, otvori ga i dozvoli instalaciju iz ovog izvora.
+
+          **iPhone:** otvori https://ermin1990.github.io/Titlo/app/ u Safariju, pa Podijeli → Dodaj na početni ekran.
+
+          Sve: https://ermin1990.github.io/Titlo/
+          EOF
+          gh release create beta "$RUNNER_TEMP/titlo-beta.apk" \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Titlo Beta ${TITLO_VERSION_NAME}" \
+            --notes-file "$RUNNER_TEMP/notes.md"

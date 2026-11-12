@@ -7,8 +7,9 @@ android {
         applicationId "app.titlo"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // CI postavlja broj builda i naziv verzije (npr. 0.2.0-beta.3).
+        versionCode = Integer.parseInt(System.getenv("TITLO_VERSION_CODE") ?: "1")
+        versionName = System.getenv("TITLO_VERSION_NAME") ?: "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +17,24 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Potpis za Beta/release APK dolazi iz tajni u CI-u. Bez njih release
+    // build ostaje nepotpisan, a CI pravi debug APK.
+    def keystorePath = System.getenv("TITLO_KEYSTORE_PATH")
+    signingConfigs {
+        if (keystorePath) {
+            release {
+                storeFile file(keystorePath)
+                storePassword System.getenv("TITLO_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("TITLO_KEY_ALIAS")
+                keyPassword System.getenv("TITLO_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
+            if (keystorePath) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
