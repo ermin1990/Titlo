@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { MediaRef, Project } from '@titlo/core';
 import { createProject, migrateProject, toPortableProject } from '@titlo/core';
 
-export type Step = 'start' | 'text' | 'tap' | 'edit';
+export type Step = 'start' | 'text' | 'edit';
 
 const DRAFT_KEY = 'titlo:draft:v1';
 const PROJECT_KEY = 'titlo:project:v1';
@@ -73,10 +73,6 @@ interface AppState {
   toast: string | null;
   /** Zadnji projekat sačuvan na uređaju, bez videa. */
   savedProject: Project | null;
-  /** Indeks riječi od koje tapkanje počinje. */
-  tapStart: number;
-  /** Gdje se vraćamo kad tapkanje završi. */
-  tapReturnTo: 'edit' | 'text';
 
   setStep: (step: Step) => void;
   setText: (text: string) => void;
@@ -85,7 +81,6 @@ interface AppState {
   setProject: (project: Project) => void;
   beginProject: (options?: { styleId?: string; filterId?: string | null }) => void;
   beginFromProject: (project: Project) => void;
-  startTappingAt: (index: number, returnTo: 'edit' | 'text') => void;
   resumeProject: (file: File, loaded: { url: string; media: MediaRef }) => void;
   reset: () => void;
   showToast: (message: string | null) => void;
@@ -104,9 +99,6 @@ export const useApp = create<AppState>((set, get) => {
     fileName: null,
     toast: null,
     savedProject: readProject(),
-    tapStart: 0,
-    tapReturnTo: 'text',
-
     setStep: (step) => set({ step }),
 
     setText: (text) => {
@@ -158,8 +150,6 @@ export const useApp = create<AppState>((set, get) => {
 
     beginFromProject: (project) => set({ project, text: '' }),
 
-    startTappingAt: (index, returnTo) => set({ tapStart: index, tapReturnTo: returnTo }),
-
     resumeProject: (file, loaded) => {
       const saved = get().savedProject;
       if (!saved) return;
@@ -194,8 +184,6 @@ export const useApp = create<AppState>((set, get) => {
         media: null,
         fileName: null,
         toast: null,
-        tapStart: 0,
-        tapReturnTo: 'text',
       }),
 
     showToast: (toast) => set({ toast }),

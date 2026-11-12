@@ -1,24 +1,21 @@
 import { useApp } from '../store.js';
 
-const STEPS: Array<{ id: 'text' | 'tap' | 'edit'; label: string; number: string }> = [
+const STEPS: Array<{ id: 'text' | 'edit'; label: string; number: string }> = [
   { id: 'text', label: 'Tekst', number: '1' },
-  { id: 'tap', label: 'Tapkanje', number: '2' },
-  { id: 'edit', label: 'Uređivanje', number: '3' },
+  { id: 'edit', label: 'Uređivanje', number: '2' },
 ];
 
 export default function TopBar() {
   const step = useApp((state) => state.step);
   const project = useApp((state) => state.project);
   const reset = useApp((state) => state.reset);
+  const showToast = useApp((state) => state.showToast);
 
   const order = STEPS.findIndex((entry) => entry.id === step);
 
   const goBack = () => {
-    if (project && step !== 'edit') {
-      const ok = window.confirm('Napustiti projekat? Tekst ostaje sačuvan.');
-      if (!ok) return;
-    }
     reset();
+    if (project) showToast('Projekat je sačuvan na uređaju.');
   };
 
   return (

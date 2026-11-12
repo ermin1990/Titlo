@@ -13,6 +13,7 @@ export default function StartScreen() {
   const resumeProject = useApp((state) => state.resumeProject);
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState(false);
+  const [mismatch, setMismatch] = useState<{ file: File; loaded: Awaited<ReturnType<typeof probeVideo>> } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const resumeInput = useRef<HTMLInputElement>(null);
 
@@ -40,10 +41,8 @@ export default function StartScreen() {
     try {
       const loaded = await probeVideo(file);
       if (Math.abs(loaded.media.durationMs - savedProject.media.durationMs) > 1500) {
-        const ok = window.confirm(
-          'Trajanje izabranog videa se ne poklapa sa sačuvanim projektom. Nastaviti ipak?',
-        );
-        if (!ok) return;
+        setMismatch({ file, loaded });
+        return;
       }
       resumeProject(file, loaded);
     } catch (error) {
@@ -86,8 +85,8 @@ export default function StartScreen() {
             <em>Riječ po riječ.</em>
           </h1>
           <p>
-            Zalijepi tekst, pusti video i tapni. Ako pogriješiš, automatika predloži vrijeme, a ti
-            popraviš samo ono što ne valja. Sve ostaje na uređaju.
+            Ubaci video, prepoznaj govor i popravi riječ ako treba. Titlovi se tempiraju sami, a sve
+            ostaje na uređaju.
           </p>
         </div>
 
@@ -116,6 +115,30 @@ export default function StartScreen() {
               >
                 Uvezi isti video
               </button>
+            </div>
+          )}
+
+          {savedProject && mismatch && (
+            <div className="confirm-row" style={{ gridColumn: '1 / -1' }}>
+              <span>
+                Trajanje videa se ne poklapa sa sačuvanim projektom. Vremena riječi možda neće
+                odgovarati.
+              </span>
+              <div className="actions">
+                <button className="btn" type="button" onClick={() => setMismatch(null)}>
+                  Otkaži
+                </button>
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={() => {
+                    resumeProject(mismatch.file, mismatch.loaded);
+                    setMismatch(null);
+                  }}
+                >
+                  Nastavi ipak
+                </button>
+              </div>
             </div>
           )}
 
@@ -166,15 +189,15 @@ export default function StartScreen() {
             <div className="feature">
               <span className="num">01</span>
               <div>
-                <strong>Tapkanje uvijek radi</strong>
-                Bez interneta, bez naloga, bez modela. Radi za svaki jezik i svaki sadržaj.
+                <strong>Prepoznaj govor</strong>
+                Model radi na uređaju i piše tekst s vremenom svake riječi. Bez naloga i servera.
               </div>
             </div>
             <div className="feature">
               <span className="num">02</span>
               <div>
-                <strong>Automatika predloži</strong>
-                Analiza govora na uređaju popuni vremena, a ti popraviš samo pogrešne riječi.
+                <strong>Popravi što ne valja</strong>
+                Klikni riječ, ispravi je ili pomjeri vrijeme. Ostalo ostaje kako jest.
               </div>
             </div>
             <div className="feature">

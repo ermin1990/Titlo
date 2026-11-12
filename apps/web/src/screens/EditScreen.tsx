@@ -263,14 +263,6 @@ function Editor({ project }: { project: Project }) {
 
   const duration = project.media.durationMs;
 
-  const retapLine = (lineIndex: number) => {
-    const first = project.lines[lineIndex]?.words[0];
-    if (!first) return;
-    const index = flattenWords(project.lines).findIndex((entry) => entry.word.id === first.id);
-    useApp.getState().startTappingAt(Math.max(0, index), 'edit');
-    setStep('tap');
-  };
-
   return (
     <main className="shell">
       <div className="editor">
@@ -278,11 +270,10 @@ function Editor({ project }: { project: Project }) {
           <button
             className="btn btn-icon btn-ghost"
             type="button"
-            title="Završi i vrati se na početak"
+            title="Nazad na početak"
             onClick={() => {
-              if (window.confirm('Završiti projekat? Tekst ostaje sačuvan lokalno.')) {
-                setStep('start');
-              }
+              setStep('start');
+              showToast('Projekat je sačuvan na uređaju.');
             }}
           >
             ←
@@ -324,17 +315,6 @@ function Editor({ project }: { project: Project }) {
                   </button>
                 );
               })}
-            </div>
-            <div className="legend" style={{ marginTop: 10 }}>
-              <span>
-                <i style={{ background: '#ffe14a' }} /> tapnuto
-              </span>
-              <span>
-                <i style={{ background: '#7cb8ff' }} /> automatski
-              </span>
-              <span>
-                <i style={{ border: '1px dashed #7d7c76', background: 'transparent' }} /> raspoređeno
-              </span>
             </div>
           </aside>
 
@@ -393,18 +373,20 @@ function Editor({ project }: { project: Project }) {
               <button
                 type="button"
                 className={`mini-pill ${safeZones ? 'is-active' : ''}`}
+                title="Prikaži dio ekrana koji aplikacije poput TikToka i Instagrama prekrivaju"
                 onClick={() => setSafeZones((value) => !value)}
                 style={{ border: '1px solid var(--line-soft)' }}
               >
-                zona
+                sigurna zona
               </button>
               <button
                 type="button"
                 className={`mini-pill ${showBox ? 'is-active' : ''}`}
+                title="Prikaži okvir u kojem stoji titl"
                 onClick={() => setShowBox((value) => !value)}
                 style={{ border: '1px solid var(--line-soft)' }}
               >
-                okvir
+                okvir titla
               </button>
             </div>
 
@@ -474,9 +456,6 @@ function Editor({ project }: { project: Project }) {
 
             <div className="legend">
               <span>
-                <i style={{ background: '#ffe14a' }} /> tapnuto
-              </span>
-              <span>
                 <i style={{ background: '#7cb8ff' }} /> automatski
               </span>
               <span>
@@ -512,7 +491,6 @@ function Editor({ project }: { project: Project }) {
                   selectedWordId={selectedWordId ?? activeWord?.id ?? null}
                   onSelectWord={setSelectedWordId}
                   onSeek={seek}
-                  onRetapLine={retapLine}
                 />
               )}
               {tab === 'style' && <StylePanel project={project} onChange={setProject} />}

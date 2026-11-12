@@ -48,10 +48,6 @@ if (Capacitor.isNativePlatform()) {
       void NativeApp.minimizeApp().catch(() => undefined);
       return;
     }
-    if (state.step === 'tap') {
-      state.setStep('text');
-      return;
-    }
     state.setStep('start');
   });
 }

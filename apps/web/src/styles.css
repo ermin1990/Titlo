@@ -672,199 +672,6 @@ h3 {
   transition: width 0.2s ease;
 }
 
-/* ---------- tap screen ---------- */
-
-.tap-screen {
-  max-width: 560px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-height: calc(100vh - 120px);
-}
-
-.tap-top {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.speed-pills {
-  display: flex;
-  gap: 4px;
-  margin-left: auto;
-  background: var(--surface);
-  border: 1px solid var(--line-soft);
-  padding: 4px;
-  border-radius: 11px;
-}
-
-.speed-pill {
-  border: 0;
-  background: none;
-  color: var(--muted-2);
-  padding: 5px 10px;
-  border-radius: 8px;
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.speed-pill.is-active {
-  background: var(--yellow);
-  color: var(--yellow-ink);
-}
-
-.tap-progress {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted-2);
-}
-
-.tap-video {
-  position: relative;
-  border-radius: 14px;
-  overflow: hidden;
-  background: #000;
-  width: 100%;
-  height: clamp(140px, 26vh, 280px);
-}
-
-.tap-video video {
-  height: 100%;
-  width: 100%;
-  object-fit: contain;
-  display: block;
-  background: #000;
-}
-
-.countdown {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background: rgba(0, 0, 0, 0.55);
-  font-family: var(--display);
-  font-size: 90px;
-  font-weight: 700;
-  color: var(--yellow);
-  backdrop-filter: blur(3px);
-}
-
-.tap-lines {
-  padding: 4px 6px 0;
-  min-height: 84px;
-}
-
-.tap-line {
-  font-family: var(--display);
-  font-size: clamp(26px, 7vw, 38px);
-  line-height: 1.12;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 0.28em;
-}
-
-.tap-line .w {
-  transition: color 0.08s ease;
-}
-
-.tap-line .w.is-done {
-  color: var(--yellow);
-}
-
-.tap-line .w.is-next {
-  color: var(--text);
-}
-
-.tap-line .w.is-future {
-  color: rgba(244, 243, 238, 0.92);
-}
-
-.tap-next-line {
-  margin-top: 8px;
-  color: var(--muted-2);
-  font-size: 17px;
-  font-family: var(--display);
-  font-weight: 500;
-  opacity: 0.75;
-}
-
-.tap-zone {
-  flex: 1;
-  min-height: 160px;
-  border: 1.5px dashed rgba(255, 225, 74, 0.55);
-  border-radius: 18px;
-  background:
-    radial-gradient(200px 120px at 50% 40%, rgba(255, 225, 74, 0.08), transparent 70%),
-    var(--surface);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  user-select: none;
-  touch-action: manipulation;
-  transition:
-    transform 0.08s ease,
-    background 0.12s ease,
-    border-color 0.12s ease;
-}
-
-.tap-zone:active {
-  transform: scale(0.992);
-  background: rgba(255, 225, 74, 0.09);
-}
-
-.tap-zone.is-hit {
-  border-color: var(--yellow);
-}
-
-.tap-zone-title {
-  font-family: var(--display);
-  font-size: 34px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--yellow);
-}
-
-.tap-zone-sub {
-  font-size: 12px;
-  color: var(--muted-2);
-}
-
-.tap-zone .pulse {
-  animation: pulse 0.22s ease;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  45% {
-    transform: scale(1.06);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.tap-controls {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-
-.tap-controls .btn {
-  padding: 12px 6px;
-  font-size: 11.5px;
-}
-
 .kbd-hint {
   text-align: center;
   color: var(--muted-2);
@@ -1484,9 +1291,6 @@ kbd {
 }
 
 @media (max-width: 560px) {
-  .tap-screen {
-    min-height: calc(100dvh - 96px - env(safe-area-inset-top));
-  }
   .style-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1503,13 +1307,8 @@ kbd {
   .textarea,
   .select,
   .word-editor input,
-  .tap-zone,
   input[type='text'] {
     font-size: 16px;
-  }
-
-  .tap-controls {
-    margin-bottom: env(safe-area-inset-bottom);
   }
 
   .topbar-right {
@@ -1561,4 +1360,44 @@ kbd {
 
 .native-platform .tabs {
   top: calc(72px + env(safe-area-inset-top));
+}
+
+/* ---------- text screen: collapsible sections ---------- */
+
+.more > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 0;
+  list-style: none;
+}
+
+.more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.more > summary::before {
+  content: '›';
+  display: inline-block;
+  margin-right: 8px;
+  transition: transform 0.15s ease;
+}
+
+.more[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.more-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.more-card > summary {
+  color: var(--text);
+  font-size: 15px;
 }

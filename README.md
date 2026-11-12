@@ -6,7 +6,7 @@
 
 On-device animated word-by-word captions and filters for short videos.
 
-Paste your text, tap along with the video, fix a word if it is wrong, and export an MP4 with the
+Drop in a video, recognize the speech, fix a word if it is wrong, and export an MP4 with the
 captions burned in. Speech recognition is optional and runs locally. **No server, no account, no
 upload.**
 
@@ -39,13 +39,11 @@ upload.**
 Good animated-caption tools are paid, upload your video to a server, and handle smaller languages
 poorly. Automatic recognition fails on names, slang and singing, and fixing it on a phone is slow.
 
-Titlo is built around three timing methods that complement each other:
+Titlo is built around two timing methods that complement each other:
 
-1. **Tap.** The text is already there; you tap when each word is spoken. Works for every language
-   and every kind of content.
-2. **Auto-time.** On-device audio analysis distributes words over the detected speech. A quick first
+1. **Auto-time.** On-device audio analysis distributes words over the detected speech. A quick first
    pass that you correct only where needed.
-3. **Speech recognition.** Whisper writes the text and word timings on the device. You fix the
+2. **Speech recognition.** Whisper writes the text and word timings on the device. You fix the
    mistakes.
 
 ## Features
@@ -62,12 +60,9 @@ Titlo is built around three timing methods that complement each other:
 
 ### Timing
 
-- Tap mode: 0.5× / 0.75× / 1×, undo, skip, repeat line, haptics.
-  Keyboard: `Space`, `K`, `⌫`, `←`, `→`, `1` `2` `3`.
-- One-line re-tap: correct only the line that is off.
 - Per-word start/end sliders with 10 ms steps; edges stop at the neighbouring word.
 - Global offset for Bluetooth latency.
-- Every word remembers where its time came from: `tap`, `auto`, `aligned`, `spread` or `manual`,
+- Every word remembers where its time came from: `auto`, `aligned`, `spread` or `manual` (older projects may also contain `tap`),
   and the editor colours it accordingly.
 
 ### Speech recognition
@@ -176,8 +171,8 @@ More detail: [docs/architecture.md](docs/architecture.md).
   preserved. If you type several words, they split the existing duration.
 - **Move the caption:** drag it on the preview. X, Y and width are in the **Style** tab; **Reset to
   centre** puts it back.
-- **Wrong line?** Use **Tap this line only** in the **Time** tab. Only that line is re-timed; the
-  rest of the project is untouched.
+- **Wrong timing?** Pick the word and adjust its start and end in the **Time** tab. Neighbouring
+  words are untouched.
 - **Changed your mind about the text?** The **Text** tab diffs word by word: unchanged words keep
   their timings, new words are distributed between neighbours.
 
@@ -199,9 +194,9 @@ executable code. Every function that touches time gets a test.
 
 ## Design rules
 
-- **One screen, one task.** Text, tapping and editing are separate steps.
+- **One screen, one task.** Text and editing are separate steps.
 - **The thumb owns the lower half.** Frequent actions sit at the bottom.
-- **Colour carries meaning.** Yellow = tapped, blue = automatic, dashed = distributed, violet =
+- **Colour carries meaning.** Blue = automatic, dashed = distributed, violet =
   manual.
 - **Nothing is lost.** There is no Save button; the draft and the project are stored locally.
 - **Preview equals export.** The same renderer draws both.

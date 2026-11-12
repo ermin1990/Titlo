@@ -7,7 +7,6 @@ interface Props {
   selectedWordId: string | null;
   onSelectWord: (id: string) => void;
   onSeek: (ms: number) => void;
-  onRetapLine: (lineIndex: number) => void;
 }
 
 const SOURCE_LABEL: Record<TimeSource, string> = {
@@ -18,7 +17,7 @@ const SOURCE_LABEL: Record<TimeSource, string> = {
   manual: 'Ručno',
 };
 
-export default function TimingPanel({ project, onChange, selectedWordId, onSelectWord, onSeek, onRetapLine }: Props) {
+export default function TimingPanel({ project, onChange, selectedWordId, onSelectWord, onSeek }: Props) {
   const line: Line | undefined =
     project.lines.find((entry) => entry.words.some((word) => word.id === selectedWordId)) ??
     project.lines[0];
@@ -32,14 +31,6 @@ export default function TimingPanel({ project, onChange, selectedWordId, onSelec
 
   return (
     <div className="tab-body">
-      <button
-        className="btn"
-        type="button"
-        onClick={() => onRetapLine(project.lines.indexOf(line))}
-      >
-        ↺ Tapkaj samo ovaj red
-      </button>
-
       <div className="field">
         <span className="label">
           Globalni pomak
