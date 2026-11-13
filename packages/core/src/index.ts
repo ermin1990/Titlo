@@ -6,4 +6,5 @@ export * from './captions.js';
 export * from './auto.js';
 export * from './transcript.js';
 export * from './formats.js';
+export * from './export.js';
 export * from './project.js';

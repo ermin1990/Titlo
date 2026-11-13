@@ -1,4 +1,5 @@
 import type { CaptionStyle, Project } from '@titlo/core';
+import { exportPlan } from '@titlo/core';
 import { DataStream, createFile } from 'mp4box';
 import { ArrayBufferTarget, Muxer } from 'mp4-muxer';
 import { renderSourceFrame } from './render.js';
@@ -34,25 +35,6 @@ export function canExportVideo(): boolean {
     typeof VideoFrame !== 'undefined' &&
     typeof OffscreenCanvas !== 'undefined'
   );
-}
-
-function even(value: number): number {
-  return Math.max(2, Math.round(value / 2) * 2);
-}
-
-export function exportSize(project: Project): { width: number; height: number } {
-  const ratio = project.media.height ? project.media.width / project.media.height : 9 / 16;
-  let height = project.media.height || 1280;
-  let width = project.media.width || 720;
-
-  if (height >= width) {
-    height = Math.min(1920, height);
-    width = Math.round(height * ratio);
-  } else {
-    width = Math.min(1920, width);
-    height = Math.round(width / ratio);
-  }
-  return { width: even(width), height: even(height) };
 }
 
 interface DescriptorNode {
@@ -288,20 +270,41 @@ async function demux(fileUrl: string): Promise<Demuxed> {
   return { audio, video };
 }
 
-async function pickCodec(width: number, height: number, bitrate: number, fps: number): Promise<string> {
+/**
+ * Bira kodek koji WebView stvarno podržava. Provjerava tačno onu konfiguraciju
+ * koju ćemo koristiti (avc format, VBR, quality), jer podrška za goli kodek ne
+ * garantuje da će isto podešavanje proći kroz `configure`. Ako uređaj ne zna
+ * VBR ili `quality`, spušta se na jednostavniju konfiguraciju istog kodeka
+ * umjesto da prijavi da H.264 uopšte nema.
+ */
+async function pickEncoderConfig(
+  width: number,
+  height: number,
+  bitrate: number,
+  fps: number,
+): Promise<VideoEncoderConfig> {
   const candidates = ['avc1.64002a', 'avc1.640028', 'avc1.4d002a', 'avc1.4d0028', 'avc1.42001f'];
   for (const codec of candidates) {
-    try {
-      const support = await VideoEncoder.isConfigSupported({
-        codec,
-        width,
-        height,
-        bitrate,
-        framerate: fps,
-      });
-      if (support.supported) return codec;
-    } catch {
-      /* probaj sljedeći */
+    const base: VideoEncoderConfig = {
+      codec,
+      width,
+      height,
+      bitrate,
+      framerate: fps,
+      avc: { format: 'avc' },
+    };
+    // Titlovi su oštri i mijenjaju se iz riječi u riječ; VBR im daje više
+    // bitova u kadrovima sa novim slovima, a manje u mirnima.
+    const full: VideoEncoderConfig = { ...base, bitrateMode: 'variable', latencyMode: 'quality' };
+    const withoutBitrateMode: VideoEncoderConfig = { ...base, latencyMode: 'quality' };
+
+    for (const config of [full, withoutBitrateMode, base]) {
+      try {
+        const support = await VideoEncoder.isConfigSupported(config);
+        if (support.supported) return config;
+      } catch {
+        /* probaj sljedeću varijantu */
+      }
     }
   }
   throw new Error(
@@ -341,18 +344,20 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
     throw new Error('U videu nema H.264 slike koju mogu izvesti.');
   }
 
-  const { width, height } = exportSize(project);
-
-  // Brzina kadrova i bitrate prate original, da izvoz ne bude lošiji od snimka.
+  // Brzina kadrova i bitrate prate izvor, plus ono što traže oštri titlovi.
   const first = video.samples.reduce((min, sample) => Math.min(min, sample.timestamp), Infinity);
   const last = video.samples.reduce((max, sample) => Math.max(max, sample.timestamp + sample.duration), 0);
   const spanSeconds = Math.max(0.5, (last - first) / 1_000_000);
-  const fps = Math.min(60, Math.max(24, Math.round(video.samples.length / spanSeconds)));
+  const sourceFps = video.samples.length / spanSeconds;
   const sourceBytes = video.samples.reduce((sum, sample) => sum + sample.data.byteLength, 0);
   const sourceBitrate = (sourceBytes * 8) / spanSeconds;
-  const bitrate = Math.round(
-    Math.min(24_000_000, Math.max(width * height * fps * 0.15, sourceBitrate * 1.1, 4_000_000)),
-  );
+  const plan = exportPlan({
+    width: project.media.width || video.width,
+    height: project.media.height || video.height,
+    fps: sourceFps,
+    sourceBitrate,
+  });
+  const { width, height, fps, bitrate } = plan;
 
   const target = new ArrayBufferTarget();
   const muxer = new Muxer({
@@ -382,10 +387,11 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
   }
 
   const canvas = new OffscreenCanvas(width, height);
-  const ctx = canvas.getContext('2d') as unknown as CanvasRenderingContext2D | null;
+  // Bez alfa kanala: izvoz nije providan, a premnoženi alfa samo kvari boje.
+  const ctx = canvas.getContext('2d', { alpha: false }) as unknown as CanvasRenderingContext2D | null;
   if (!ctx) throw new Error('Canvas za izvoz nije dostupan.');
 
-  const codec = await pickCodec(width, height, bitrate, fps);
+  const config = await pickEncoderConfig(width, height, bitrate, fps);
   let encoderError: Error | null = null;
   const encoder = new VideoEncoder({
     output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
@@ -393,15 +399,7 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
       encoderError = error instanceof Error ? error : new Error(String(error));
     },
   });
-  encoder.configure({
-    codec,
-    width,
-    height,
-    bitrate,
-    framerate: fps,
-    avc: { format: 'avc' },
-    latencyMode: 'quality',
-  });
+  encoder.configure(config);
 
   let decoderError: Error | null = null;
   let frameIndex = 0;
