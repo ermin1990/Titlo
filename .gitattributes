@@ -1,0 +1,7 @@
+# GitHub jezička statistika: dizajn i landing nisu kod aplikacije,
+# a native projekti su uglavnom generisani (Capacitor).
+design/** linguist-documentation
+site/** linguist-documentation
+docs/** linguist-documentation
+ios/** linguist-vendored
+android/** linguist-vendored
